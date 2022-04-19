@@ -25,7 +25,7 @@ class OpenGD77ChannelExtension: public ConfigExtension
   Q_CLASSINFO("description", "Channel settings for OpenGD77 radios.")
   Q_CLASSINFO("longDescription", "This extension implements all channel settings specific to radios "
               "running the OpenGD77 firmware. As the OpenGD77 codeplug is derived from the "
-              "Radioddity GD77 codeplug, all Radioddity extension also apply.")
+              "Radioddity GD77 codeplug, all Radioddity extension also apply.");
 
 public:
   /** All possible power settings. */

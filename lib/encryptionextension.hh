@@ -43,10 +43,10 @@ protected:
 class DMREncryptionKey: public EncryptionKey
 {
   Q_OBJECT
-  Q_CLASSINFO("description", "A basic DMR encryption key.")
+  Q_CLASSINFO("description", "A basic DMR encryption key.");
   Q_CLASSINFO("longDescription",
               "This is a 16bit pre-shared key that can be used to encrypt/decrypt trafic on DMR "
-              "channels. Encryption is forbidden in HAM radio context!")
+              "channels. Encryption is forbidden in HAM radio context!");
 
 public:
   /** Empty constructor. */
@@ -73,7 +73,7 @@ class AESEncryptionKey: public EncryptionKey
   Q_CLASSINFO("description", "An AES (enhanced) DMR encryption key.")
   Q_CLASSINFO("longDescription",
               "This is a 128bit pre-shared key that can be used to encrypt/decrypt trafic on DMR "
-              "channels. Encryption is forbidden in HAM radio context!")
+              "channels. Encryption is forbidden in HAM radio context!");
 
 public:
   /** Empty constructor. */
