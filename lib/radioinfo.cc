@@ -12,6 +12,7 @@
 #include "d878uv2.hh"
 #include "d578uv.hh"
 #include "dmr6x2uv.hh"
+#include "dmr6x2uv2.hh"
 #include "dm1701.hh"
 
 
@@ -34,6 +35,7 @@ RadioInfo::_radiosByName = QHash<QString, RadioInfo::Radio>{
   {"d868uv",   RadioInfo::D868UV},
   {"d868uve",  RadioInfo::D868UVE},
   {"dmr6x2uv", RadioInfo::DMR6X2UV},
+  {"dmr6x2uv2", RadioInfo::DMR6X2UV2},
   {"d878uv",   RadioInfo::D878UV},
   {"d878uv2",  RadioInfo::D878UVII},
   {"d578uv",   RadioInfo::D578UV}
@@ -41,19 +43,20 @@ RadioInfo::_radiosByName = QHash<QString, RadioInfo::Radio>{
 
 QHash<unsigned, RadioInfo>
 RadioInfo::_radiosById = QHash<unsigned, RadioInfo>{
-  {RadioInfo::OpenGD77, OpenGD77::defaultRadioInfo()},
-  {RadioInfo::OpenRTX,  OpenRTX::defaultRadioInfo()},
-  {RadioInfo::RD5R,     RD5R::defaultRadioInfo()},
-  {RadioInfo::GD77,     GD77::defaultRadioInfo()},
-  {RadioInfo::MD390,    MD390::defaultRadioInfo()},
-  {RadioInfo::UV390,    UV390::defaultRadioInfo()},
-  {RadioInfo::MD2017,   MD2017::defaultRadioInfo()},
-  {RadioInfo::DM1701,   DM1701::defaultRadioInfo()},
-  {RadioInfo::D868UVE,  D868UV::defaultRadioInfo()},
-  {RadioInfo::D878UV,   D878UV::defaultRadioInfo()},
-  {RadioInfo::D878UVII, D878UV2::defaultRadioInfo()},
-  {RadioInfo::D578UV,   D578UV::defaultRadioInfo()},
-  {RadioInfo::DMR6X2UV, DMR6X2UV::defaultRadioInfo()}
+  {RadioInfo::OpenGD77,  OpenGD77::defaultRadioInfo()},
+  {RadioInfo::OpenRTX,   OpenRTX::defaultRadioInfo()},
+  {RadioInfo::RD5R,      RD5R::defaultRadioInfo()},
+  {RadioInfo::GD77,      GD77::defaultRadioInfo()},
+  {RadioInfo::MD390,     MD390::defaultRadioInfo()},
+  {RadioInfo::UV390,     UV390::defaultRadioInfo()},
+  {RadioInfo::MD2017,    MD2017::defaultRadioInfo()},
+  {RadioInfo::DM1701,    DM1701::defaultRadioInfo()},
+  {RadioInfo::D868UVE,   D868UV::defaultRadioInfo()},
+  {RadioInfo::D878UV,    D878UV::defaultRadioInfo()},
+  {RadioInfo::D878UVII,  D878UV2::defaultRadioInfo()},
+  {RadioInfo::D578UV,    D578UV::defaultRadioInfo()},
+  {RadioInfo::DMR6X2UV,  DMR6X2UV::defaultRadioInfo()},
+  {RadioInfo::DMR6X2UV2, DMR6X2UV2::defaultRadioInfo()}
 };
 
 
