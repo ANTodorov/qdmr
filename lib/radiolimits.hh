@@ -33,6 +33,7 @@
 #include <QTextStream>
 #include <QMetaType>
 #include <QSet>
+#include <QRegularExpression>
 
 // Forward declaration
 class Config;
@@ -220,7 +221,7 @@ public:
 
 protected:
   /** Holds the regular expression pattern. */
-  QRegExp _pattern;
+  QRegularExpression _pattern;
 };
 
 

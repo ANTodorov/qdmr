@@ -2212,7 +2212,7 @@ D878UVCodeplug::setBitmaps(Config *config)
   // Get all (unique) channels used in roaming
   QSet<DMRChannel*> roaming_channels;
   config->roaming()->uniqueChannels(roaming_channels);
-  for (int i=0; i<std::min(NUM_ROAMING_CHANNEL,roaming_channels.count()); i++)
+  for (int i=0; i<std::min(qsizetype(NUM_ROAMING_CHANNEL), roaming_channels.count()); i++)
     roaming_ch_bitmap[i/8] |= (1<<(i%8));
 }
 

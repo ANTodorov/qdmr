@@ -1,6 +1,7 @@
 #ifndef ERRORSTACK_HH
 #define ERRORSTACK_HH
 
+#include <QList>
 #include <QTextStream>
 
 /** Implements a stack of error messages to provide a pretty formatted error traceback.

@@ -3725,7 +3725,7 @@ AnytoneCodeplug::DTMFSettingsElement::id() const {
 }
 void
 AnytoneCodeplug::DTMFSettingsElement::setID(const QString &id) {
-  int len = std::min(3, id.length());
+  int len = std::min(qsizetype(3), id.length());
   bool ok;
   for (int i=0; i<len; i++)
     setUInt8(0x0006+i, id.mid(i,1).toUInt(&ok, 16));
@@ -3786,7 +3786,7 @@ AnytoneCodeplug::DTMFSettingsElement::botID() const {
 }
 void
 AnytoneCodeplug::DTMFSettingsElement::setBOTID(const QString &id) {
-  int len = std::min(16, id.length());
+  int len = std::min(qsizetype(16), id.length());
   bool ok;
   for (int i=0; i<len; i++)
     setUInt8(0x0010+i, id.mid(i,1).toUInt(&ok, 16));
@@ -3802,7 +3802,7 @@ AnytoneCodeplug::DTMFSettingsElement::eotID() const {
 }
 void
 AnytoneCodeplug::DTMFSettingsElement::setEOTID(const QString &id) {
-  int len = std::min(16, id.length());
+  int len = std::min(qsizetype(16), id.length());
   bool ok;
   for (int i=0; i<len; i++)
     setUInt8(0x0020+i, id.mid(i,1).toUInt(&ok, 16));
@@ -3818,7 +3818,7 @@ AnytoneCodeplug::DTMFSettingsElement::remoteKillID() const {
 }
 void
 AnytoneCodeplug::DTMFSettingsElement::setRemoteKillID(const QString &id) {
-  int len = std::min(16, id.length());
+  int len = std::min(qsizetype(16), id.length());
   bool ok;
   for (int i=0; i<len; i++)
     setUInt8(0x0030+i, id.mid(i,1).toUInt(&ok, 16));
@@ -3835,7 +3835,7 @@ AnytoneCodeplug::DTMFSettingsElement::remoteStunID() const {
 }
 void
 AnytoneCodeplug::DTMFSettingsElement::setRemoteStunID(const QString &id) {
-  int len = std::min(16, id.length());
+  int len = std::min(qsizetype(16), id.length());
   bool ok;
   for (int i=0; i<len; i++)
     setUInt8(0x0040+i, id.mid(i,1).toUInt(&ok, 16));

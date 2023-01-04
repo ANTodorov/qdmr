@@ -147,7 +147,7 @@ Application::isDarkMode() const {
 bool
 Application::isDarkMode(const QPalette &palette) const {
   int text_hsv_value = palette.color(QPalette::WindowText).value(),
-      bg_hsv_value = palette.color(QPalette::Background).value();
+      bg_hsv_value = palette.color(QPalette::Window).value();
   return text_hsv_value > bg_hsv_value;
 }
 

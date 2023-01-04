@@ -1,5 +1,5 @@
 #include "utils.hh"
-#include <QRegExp>
+#include <QRegularExpression>
 #include <QVector>
 #include <QHash>
 #include <cmath>
@@ -369,12 +369,12 @@ uint16_t dec_to_oct(uint16_t dec) {
 
 bool
 validDMRNumber(const QString &text) {
-  return QRegExp("^[0-9]+$").exactMatch(text);
+  return QRegularExpression("^[0-9]+$").match(text).isValid();
 }
 
 bool
 validDTMFNumber(const QString &text) {
-  return QRegExp("^[0-9a-dA-D\\*#]+$").exactMatch(text);
+  return QRegularExpression("^[0-9a-dA-D\\*#]+$").match(text).isValid();
 }
 
 QString
@@ -549,13 +549,13 @@ deg2loc(const QGeoCoordinate &coor) {
   double lat = coor.latitude()+90;
   char l = char(lon/20); lon -= 20*double(l);
   char c = char(lat/10); lat -= 10*double(c);
-  loc.append(l+'A'); loc.append(c+'A');
+  loc.append(QChar::fromLatin1(l+'A')); loc.append(QChar::fromLatin1(c+'A'));
   l = char(lon/2); lon -= 2*double(l);
   c = char(lat/1); lat -= 1*double(c);
-  loc.append(l+'0'); loc.append(c+'0');
+  loc.append(QChar::fromLatin1(l+'0')); loc.append(QChar::fromLatin1(c+'0'));
   l = char(lon*12); lon -= double(l)/12;
   c = char(lat*24); lat -= double(c)/24;
-  loc.append(l+'a'); loc.append(c+'a');
+  loc.append(QChar::fromLatin1(l+'a')); loc.append(QChar::fromLatin1(c+'a'));
   return loc;
 }
 

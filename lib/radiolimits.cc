@@ -8,7 +8,7 @@
 // Utility function to check string content for ASCII encoding
 inline bool qstring_is_ascii(const QString &text) {
   foreach (QChar c, text) {
-    if ((c<0x1f) && (0x7f != c))
+    if ((c.unicode()<0x1f) && (0x7f != c.unicode()))
       return false;
   }
   return true;
@@ -226,14 +226,15 @@ RadioLimitStringRegEx::RadioLimitStringRegEx(const QString &pattern, QObject *pa
 
 bool
 RadioLimitStringRegEx::verify(const ConfigItem *item, const QMetaProperty &prop, RadioLimitContext &context) const {
-  if (QVariant::String != prop.type()) {
+  if (QMetaType::QString != prop.type()) {
     auto &msg = context.newMessage(RadioLimitIssue::Critical);
     msg << "Cannot check property " << prop.name() << ": Expected string.";
     return false;
   }
 
   QString value = prop.read(item).toString();
-  if (! _pattern.exactMatch(value)) {
+  QRegularExpressionMatch match = _pattern.match(value);
+  if (! match.isValid()) {
     auto &msg = context.newMessage(RadioLimitIssue::Warning);
     msg << "Value '" << value << "' of property " << prop.name()
         << " does not match pattern '" << _pattern.pattern() << "'.";
@@ -283,7 +284,7 @@ bool
 RadioLimitBool::verify(const ConfigItem *item, const QMetaProperty &prop, RadioLimitContext &context) const {
   Q_UNUSED(item)
 
-  if (QVariant::Bool != prop.type()) {
+  if (QMetaType::Bool != prop.type()) {
     auto &msg = context.newMessage(RadioLimitIssue::Critical);
     msg << "Cannot check property " << prop.name() << ": Expected bool.";
     return false;

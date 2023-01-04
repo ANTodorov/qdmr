@@ -35,13 +35,13 @@ SET(qdmr_UI_FORMS dmrcontactdialog.ui dtmfcontactdialog.ui rxgrouplistdialog.ui 
   deviceselectiondialog.ui radioselectiondialog.ui dmriddialog.ui configobjecttypeselectiondialog.ui)
 
 set(qdmr_TS_FILES ../i18n/de.ts ../i18n/en_US.ts)
-qt5_wrap_cpp(qdmr_MOC_SOURCES ${qdmr_MOC_HEADERS})
-qt5_wrap_ui(qdmr_UI_SOURCES ${qdmr_UI_FORMS})
+qt6_wrap_cpp(qdmr_MOC_SOURCES ${qdmr_MOC_HEADERS})
+qt6_wrap_ui(qdmr_UI_SOURCES ${qdmr_UI_FORMS})
 
-qt5_add_translation(qdmr_QM_FILES ${qdmr_TS_FILES})
+qt6_add_translation(qdmr_QM_FILES ${qdmr_TS_FILES})
 message(STATUS "Translations at: ${qdmr_QM_FILES}")
 
-qt5_add_resources(qdmr_RCC_SOURCES ../shared/resources.qrc)
+qt6_add_resources(qdmr_RCC_SOURCES ../shared/resources.qrc)
 
 add_executable(qdmr WIN32
   ${qdmr_SOURCES} ${qdmr_MOC_SOURCES} ${qdmr_RCC_SOURCES} ${qdmr_UI_SOURCES} ${qdmr_QM_FILES})

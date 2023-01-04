@@ -2437,7 +2437,7 @@ RadioddityCodeplug::MessageBankElement::appendMessage(const QString msg) {
   unsigned idx = numMessages();
   if (idx >= 32)
     return;
-  unsigned len = std::min(msg.size(), 144);
+  unsigned len = std::min(msg.size(), qsizetype(144));
   // increment counter
   setUInt8(0x0000, idx+1);
   // store length
