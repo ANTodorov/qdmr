@@ -30,10 +30,11 @@
 #define VFO_SIZE                  0x00000040 // Size of each VFO settings.
 
 #define NUM_CONTACTS              10000      // Total number of contacts
-#define NUM_CONTACT_BANKS         2500       // Number of contact banks
-#define CONTACTS_PER_BANK         4
-#define CONTACT_BANK_0            0x02680000 // First bank of 4 contacts
-#define CONTACT_BANK_SIZE         0x00000190 // Size of 4 contacts
+#define CONTACTS_PER_BLOCK        4
+#define CONTACT_BLOCK_0           0x02680000 // First bank of 4 contacts
+#define CONTACT_BLOCK_SIZE        0x00000190 // Size of 4 contacts
+#define CONTACT_BANK_SIZE         0x00040000 // Size of one contact bank
+#define CONTACTS_PER_BANK         1000       // Number of contacts per bank
 #define CONTACT_INDEX_LIST        0x02600000 // Address of contact index list
 #define CONTACTS_BITMAP           0x02640000 // Address of contact bitmap
 #define CONTACTS_BITMAP_SIZE      0x00000500 // Size of contact bitmap
@@ -218,6 +219,163 @@ D868UVCodeplug::ctcss_num2code(uint8_t num) {
   return _ctcss_num2code[num];
 }
 
+
+/* ******************************************************************************************** *
+ * Implementation of D868UVCodeplug::ChannelElement
+ * ******************************************************************************************** */
+D868UVCodeplug::ChannelElement::ChannelElement(uint8_t *ptr, unsigned size)
+  : AnytoneCodeplug::ChannelElement(ptr, size)
+{
+  // pass...
+}
+
+D868UVCodeplug::ChannelElement::ChannelElement(uint8_t *ptr)
+  : AnytoneCodeplug::ChannelElement(ptr)
+{
+  // pass...
+}
+
+bool
+D868UVCodeplug::ChannelElement::ranging() const {
+  return getBit(0x0034, 0);
+}
+void
+D868UVCodeplug::ChannelElement::enableRanging(bool enable) {
+  setBit(0x0034, 0, enable);
+}
+
+bool
+D868UVCodeplug::ChannelElement::throughMode() const {
+  return getBit(0x0034, 1);
+}
+void
+D868UVCodeplug::ChannelElement::enableThroughMode(bool enable) {
+  setBit(0x0034, 1, enable);
+}
+
+bool
+D868UVCodeplug::ChannelElement::dataACK() const {
+  return !getBit(0x0034, 2);
+}
+void
+D868UVCodeplug::ChannelElement::enableDataACK(bool enable) {
+  setBit(0x0034, 2, !enable);
+}
+
+bool
+D868UVCodeplug::ChannelElement::txDigitalAPRS() const {
+  return getBit(0x0035, 0);
+}
+void
+D868UVCodeplug::ChannelElement::enableTXDigitalAPRS(bool enable) {
+  setBit(0x0035, 0, enable);
+}
+unsigned
+D868UVCodeplug::ChannelElement::digitalAPRSSystemIndex() const {
+  return getUInt8(0x0036);
+}
+void
+D868UVCodeplug::ChannelElement::setDigitalAPRSSystemIndex(unsigned idx) {
+  setUInt8(0x0036, idx);
+}
+
+unsigned
+D868UVCodeplug::ChannelElement::dmrEncryptionKeyIndex() const {
+  return getUInt8(0x003a);
+}
+void
+D868UVCodeplug::ChannelElement::setDMREncryptionKeyIndex(unsigned idx) {
+  setUInt8(0x003a, idx);
+}
+
+bool
+D868UVCodeplug::ChannelElement::multipleKeyEncryption() const {
+  return getBit(0x003b, 0);
+}
+void
+D868UVCodeplug::ChannelElement::enableMultipleKeyEncryption(bool enable) {
+  setBit(0x003b, 0, enable);
+}
+
+bool
+D868UVCodeplug::ChannelElement::randomKey() const {
+  return getBit(0x003b, 1);
+}
+void
+D868UVCodeplug::ChannelElement::enableRandomKey(bool enable) {
+  setBit(0x003b, 1, enable);
+}
+bool
+D868UVCodeplug::ChannelElement::sms() const {
+  return !getBit(0x003b, 2);
+}
+void
+D868UVCodeplug::ChannelElement::enableSMS(bool enable) {
+  setBit(0x003b, 0, !enable);
+}
+
+Channel *
+D868UVCodeplug::ChannelElement::toChannelObj(Context &ctx) const {
+  Channel *ch = AnytoneCodeplug::ChannelElement::toChannelObj(ctx);
+  if (nullptr == ch)
+    return nullptr;
+
+  if (ch->is<DMRChannel>()) {
+    DMRChannel *dch = ch->as<DMRChannel>();
+    if (AnytoneDMRChannelExtension *ext = dch->anytoneChannelExtension()) {
+      ext->enableSMS(sms());
+      ext->enableDataACK(dataACK());
+      ext->enableThroughMode(throughMode());
+    }
+  }
+
+  return ch;
+}
+
+bool
+D868UVCodeplug::ChannelElement::linkChannelObj(Channel *c, Context &ctx) const {
+  if (! AnytoneCodeplug::ChannelElement::linkChannelObj(c, ctx))
+    return false;
+
+  if (c->is<DMRChannel>()) {
+    DMRChannel *dc = c->as<DMRChannel>();
+    // Link to GPS system
+    if (txDigitalAPRS() && (! ctx.has<GPSSystem>(digitalAPRSSystemIndex())))
+      logWarn() << "Cannot link to DMR APRS system index " << digitalAPRSSystemIndex() << ": undefined DMR APRS system.";
+    else if (ctx.has<GPSSystem>(digitalAPRSSystemIndex()))
+      dc->setAPRSObj(ctx.get<GPSSystem>(digitalAPRSSystemIndex()));
+  }
+
+  return true;
+}
+
+bool
+D868UVCodeplug::ChannelElement::fromChannelObj(const Channel *c, Context &ctx) {
+  if (! AnytoneCodeplug::ChannelElement::fromChannelObj(c, ctx))
+    return false;
+
+  if (c->is<DMRChannel>()) {
+    const DMRChannel *dc = c->as<const DMRChannel>();
+    // Set GPS system index
+    if (dc->aprsObj() && dc->aprsObj()->is<GPSSystem>()) {
+      setDigitalAPRSSystemIndex(ctx.index(dc->aprsObj()->as<GPSSystem>()));
+      enableTXDigitalAPRS(true);
+      enableRXAPRS(false);
+    } else {
+      enableTXDigitalAPRS(false);
+      enableRXAPRS(false);
+    }
+
+    // Handle extension
+    if (AnytoneDMRChannelExtension *ext = dc->anytoneChannelExtension()) {
+      enableSMS(ext->sms());
+      enableDataACK(ext->dataACK());
+      enableThroughMode(ext->throughMode());
+    }
+  }
+
+  return true;
+}
 
 /* ******************************************************************************************** *
  * Implementation of D868UVCodeplug::GeneralSettingsElement
@@ -470,41 +628,16 @@ D868UVCodeplug::GeneralSettingsElement::updateConfig(Context &ctx) {
 /* ******************************************************************************************** *
  * Implementation of D868UVCodeplug
  * ******************************************************************************************** */
-D868UVCodeplug::D868UVCodeplug(QObject *parent)
-  : AnytoneCodeplug(parent)
+D868UVCodeplug::D868UVCodeplug(const QString &label, QObject *parent)
+  : AnytoneCodeplug(label, parent)
 {
-  addImage("Anytone AT-D868UV Codeplug");
-
-  // Channel bitmap
-  image(0).addElement(CHANNEL_BITMAP, CHANNEL_BITMAP_SIZE);
-  // Zone bitmap
-  image(0).addElement(ZONE_BITMAPS, ZONE_BITMAPS_SIZE);
-  // Contacts bitmap
-  image(0).addElement(CONTACTS_BITMAP, CONTACTS_BITMAP_SIZE);
-  // Analog contacts bytemap
-  image(0).addElement(ANALOGCONTACT_BYTEMAP, ANALOGCONTACT_BYTEMAP_SIZE);
-  // RX group list bitmaps
-  image(0).addElement(RXGRP_BITMAP, RXGRP_BITMAP_SIZE);
-  // Scan list bitmaps
-  image(0).addElement(SCAN_BITMAP, SCAN_BITMAP_SIZE);
-  // Radio IDs bitmaps
-  image(0).addElement(RADIOID_BITMAP, RADIOID_BITMAP_SIZE);
-  // Messag bitmaps
-  image(0).addElement(MESSAGE_BYTEMAP, MESSAGE_BYTEMAP_SIZE);
-  // Status messages
-  image(0).addElement(STATUSMESSAGE_BITMAP, STATUSMESSAGE_BITMAP_SIZE);
-  // FM Broadcast bitmaps
-  image(0).addElement(FMBC_BITMAP, FMBC_BITMAP_SIZE);
-  // 5-Tone function bitmaps
-  image(0).addElement(FIVE_TONE_ID_BITMAP, FIVE_TONE_ID_BITMAP_SIZE);
-  // 2-Tone function bitmaps
-  image(0).addElement(TWO_TONE_IDS_BITMAP, TWO_TONE_IDS_BITMAP_SIZE);
-  image(0).addElement(TWO_TONE_FUNCTIONS_BITMAP, TWO_TONE_FUNC_BITMAP_SIZE);
+  // pass...
 }
 
-void
-D868UVCodeplug::clear() {
-  // NOOP
+D868UVCodeplug::D868UVCodeplug(QObject *parent)
+  : AnytoneCodeplug("AnyTone AT-D868UV Codeplug", parent)
+{
+  // pass...
 }
 
 void
@@ -570,6 +703,38 @@ D868UVCodeplug::allocateForDecoding() {
 }
 
 
+bool
+D868UVCodeplug::allocateBitmaps() {
+  // Channel bitmap
+  image(0).addElement(CHANNEL_BITMAP, CHANNEL_BITMAP_SIZE);
+  // Zone bitmap
+  image(0).addElement(ZONE_BITMAPS, ZONE_BITMAPS_SIZE);
+  // Contacts bitmap
+  image(0).addElement(CONTACTS_BITMAP, CONTACTS_BITMAP_SIZE);
+  // Analog contacts bytemap
+  image(0).addElement(ANALOGCONTACT_BYTEMAP, ANALOGCONTACT_BYTEMAP_SIZE);
+  // RX group list bitmaps
+  image(0).addElement(RXGRP_BITMAP, RXGRP_BITMAP_SIZE);
+  // Scan list bitmaps
+  image(0).addElement(SCAN_BITMAP, SCAN_BITMAP_SIZE);
+  // Radio IDs bitmaps
+  image(0).addElement(RADIOID_BITMAP, RADIOID_BITMAP_SIZE);
+  // Message bitmaps
+  image(0).addElement(MESSAGE_BYTEMAP, MESSAGE_BYTEMAP_SIZE);
+  // Status messages
+  image(0).addElement(STATUSMESSAGE_BITMAP, STATUSMESSAGE_BITMAP_SIZE);
+  // FM Broadcast bitmaps
+  image(0).addElement(FMBC_BITMAP, FMBC_BITMAP_SIZE);
+  // 5-Tone function bitmaps
+  image(0).addElement(FIVE_TONE_ID_BITMAP, FIVE_TONE_ID_BITMAP_SIZE);
+  // 2-Tone function bitmaps
+  image(0).addElement(TWO_TONE_IDS_BITMAP, TWO_TONE_IDS_BITMAP_SIZE);
+  image(0).addElement(TWO_TONE_FUNCTIONS_BITMAP, TWO_TONE_FUNC_BITMAP_SIZE);
+
+  return true;
+}
+
+
 void
 D868UVCodeplug::setBitmaps(Config *config)
 {
@@ -625,20 +790,6 @@ D868UVCodeplug::setBitmaps(Config *config)
   }
 }
 
-bool
-D868UVCodeplug::encode(Config *config, const Flags &flags, const ErrorStack &err) {
-  Context ctx(config);
-  if (! index(config, ctx, err))
-    return false;
-
-  return encodeElements(flags, ctx, err);
-}
-
-bool D868UVCodeplug::decode(Config *config, const ErrorStack &err) {
-  // Maps code-plug indices to objects
-  Context ctx(config);
-  return decodeElements(ctx, err);
-}
 
 bool
 D868UVCodeplug::encodeElements(const Flags &flags, Context &ctx, const ErrorStack &err)
@@ -818,12 +969,14 @@ D868UVCodeplug::allocateContacts() {
     if (1 == ((contact_bitmap[i/8]>>(i%8)) & 0x01))
       continue;
     contactCount++;
-    uint32_t addr = CONTACT_BANK_0+(i/CONTACTS_PER_BANK)*CONTACT_BANK_SIZE;
+    uint32_t bank_addr = CONTACT_BLOCK_0 + (i/CONTACTS_PER_BANK)*CONTACT_BANK_SIZE;
+    uint32_t addr = bank_addr + ((i%CONTACTS_PER_BANK)/CONTACTS_PER_BLOCK)*CONTACT_BLOCK_SIZE;
     if (nullptr == data(addr, 0)) {
-      image(0).addElement(addr, CONTACT_BANK_SIZE);
-      memset(data(addr), 0x00, CONTACT_BANK_SIZE);
+      image(0).addElement(addr, CONTACT_BLOCK_SIZE);
+      memset(data(addr), 0x00, CONTACT_BLOCK_SIZE);
     }
   }
+
   if (contactCount) {
     image(0).addElement(CONTACT_INDEX_LIST, align_size(4*contactCount, 16));
     memset(data(CONTACT_INDEX_LIST), 0xff, align_size(4*contactCount, 16));
@@ -836,11 +989,13 @@ bool
 D868UVCodeplug::encodeContacts(const Flags &flags, Context &ctx, const ErrorStack &err) {
   Q_UNUSED(flags); Q_UNUSED(err)
 
-  QVector<DigitalContact*> contacts;
+  QVector<DMRContact*> contacts;
   // Encode contacts and also collect id<->index map
   for (int i=0; i<ctx.config()->contacts()->digitalCount(); i++) {
-    ContactElement con(data(CONTACT_BANK_0+i*CONTACT_SIZE));
-    DigitalContact *contact = ctx.config()->contacts()->digitalContact(i);
+    uint32_t bank_addr = CONTACT_BLOCK_0 + (i/CONTACTS_PER_BANK)*CONTACT_BANK_SIZE;
+    uint32_t addr = bank_addr + (i%CONTACTS_PER_BANK)*CONTACT_SIZE;
+    ContactElement con(data(addr));
+    DMRContact *contact = ctx.config()->contacts()->digitalContact(i);
     if(! con.fromContactObj(contact, ctx))
       return false;
     ((uint32_t *)data(CONTACT_INDEX_LIST))[i] = qToLittleEndian(i);
@@ -848,12 +1003,12 @@ D868UVCodeplug::encodeContacts(const Flags &flags, Context &ctx, const ErrorStac
   }
   // encode index map for contacts
   std::sort(contacts.begin(), contacts.end(),
-            [](DigitalContact *a, DigitalContact *b) {
+            [](DMRContact *a, DMRContact *b) {
     return a->number() < b->number();
   });
   for (int i=0; i<contacts.size(); i++) {
     ContactMapElement el(data(CONTACT_ID_MAP + i*CONTACT_ID_ENTRY_SIZE));
-    el.setID(contacts[i]->number(), (DigitalContact::GroupCall==contacts[i]->type()));
+    el.setID(contacts[i]->number(), (DMRContact::GroupCall==contacts[i]->type()));
     el.setIndex(ctx.index(contacts[i]));
   }
   return true;
@@ -870,8 +1025,10 @@ D868UVCodeplug::createContacts(Context &ctx, const ErrorStack &err) {
     uint16_t  bit = i%8, byte = i/8;
     if (1 == ((contact_bitmap[byte]>>bit) & 0x01))
       continue;
-    ContactElement con(data(CONTACT_BANK_0+i*CONTACT_SIZE));
-    if (DigitalContact *obj = con.toContactObj(ctx)) {
+    uint32_t bank_addr = CONTACT_BLOCK_0 + (i/CONTACTS_PER_BANK)*CONTACT_BANK_SIZE;
+    uint32_t addr = bank_addr + (i%CONTACTS_PER_BANK)*CONTACT_SIZE;
+    ContactElement con(data(addr));
+    if (DMRContact *obj = con.toContactObj(ctx)) {
       ctx.config()->contacts()->add(obj); ctx.add(obj, i);
     }
   }
@@ -1300,7 +1457,7 @@ D868UVCodeplug::linkScanLists(Context &ctx, const ErrorStack &err) {
     ScanListElement scanl(data(addr));
     // Create scanlist
     ScanList *obj = ctx.get<ScanList>(i);
-    // Link scanlists immediately, all channels are defined allready
+    // Link scanlists immediately, all channels are defined already
     ctx.config()->scanlists()->add(obj); scanl.linkScanListObj(obj, ctx);
   }
   return true;
@@ -1386,7 +1543,7 @@ D868UVCodeplug::createGPSSystems(Context &ctx, const ErrorStack &err) {
     uint16_t  bit = i%8, byte = i/8, bank = i/128, idx = i%128;
     if (0 == ((channel_bitmap[byte]>>bit) & 0x01))
       continue;
-    if (ctx.get<Channel>(i)->is<AnalogChannel>())
+    if (ctx.get<Channel>(i)->is<FMChannel>())
       continue;
     ChannelElement ch(data(CHANNEL_BANK_0 + bank*CHANNEL_BANK_OFFSET + idx*CHANNEL_SIZE));
     if (ch.txDigitalAPRS())

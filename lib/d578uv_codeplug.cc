@@ -22,10 +22,11 @@
 #define CHANNEL_SIZE              0x00000040
 
 #define NUM_CONTACTS              10000      // Total number of contacts
-#define NUM_CONTACT_BANKS         2500       // Number of contact banks
-#define CONTACTS_PER_BANK         4
-#define CONTACT_BANK_0            0x02680000 // First bank of 4 contacts
-#define CONTACT_BANK_SIZE         0x00000190 // Size of 4 contacts
+#define CONTACTS_PER_BLOCK        4
+#define CONTACT_BLOCK_0           0x02680000 // First bank of 4 contacts
+#define CONTACT_BLOCK_SIZE        0x00000190 // Size of 4 contacts
+#define CONTACT_BANK_SIZE         0x00040000 // Size of one contact bank
+#define CONTACTS_PER_BANK         1000       // Number of contacts per bank
 #define CONTACT_INDEX_LIST        0x02600000 // Address of contact index list
 #define CONTACTS_BITMAP           0x02640000 // Address of contact bitmap
 #define CONTACTS_BITMAP_SIZE      0x00000500 // Size of contact bitmap
@@ -108,12 +109,44 @@ D578UVCodeplug::ChannelElement::enableAnalogScamber(bool enable) {
   setUInt8(0x003a, (enable ? 0x01 : 0x00));
 }
 
+Channel *
+D578UVCodeplug::ChannelElement::toChannelObj(Context &ctx) const {
+  Channel *ch = D878UVCodeplug::ChannelElement::toChannelObj(ctx);
+  if (nullptr == ch)
+    return nullptr;
+
+  // Apply extensions
+  if (FMChannel *fch = ch->as<FMChannel>()) {
+    if (AnytoneFMChannelExtension *ext = fch->anytoneChannelExtension()) {
+      // Common settings
+      ext->enableHandsFree(handsFree());
+      // FM specific settings
+      ext->enableScrambler(analogScambler());
+    }
+  } else if (DMRChannel *dch = ch->as<DMRChannel>()) {
+    if (AnytoneDMRChannelExtension *ext = dch->anytoneChannelExtension()) {
+      // Common settings
+      ext->enableHandsFree(handsFree());
+      // DMR specific extensions
+    }
+  }
+
+  // Done.
+  return ch;
+}
+
 
 /* ******************************************************************************************** *
  * Implementation of D578UVCodeplug
  * ******************************************************************************************** */
+D578UVCodeplug::D578UVCodeplug(const QString &label, QObject *parent)
+  : D878UVCodeplug(label, parent)
+{
+  // pass...
+}
+
 D578UVCodeplug::D578UVCodeplug(QObject *parent)
-  : D878UVCodeplug(parent)
+  : D878UVCodeplug("AnyTone AT-D578UV Codeplug", parent)
 {
   // pass...
 }
@@ -193,7 +226,8 @@ D578UVCodeplug::allocateContacts() {
     if (1 == ((contact_bitmap[i/8]>>(i%8)) & 0x01))
       continue;
     contactCount++;
-    uint32_t addr = CONTACT_BANK_0+(i/CONTACTS_PER_BANK)*CONTACT_BANK_SIZE;
+    uint32_t bank_addr = CONTACT_BLOCK_0 + (i/CONTACTS_PER_BANK)*CONTACT_BANK_SIZE;
+    uint32_t addr = bank_addr + (i%CONTACTS_PER_BANK)*CONTACT_SIZE;
     if (nullptr == data(addr, 0)) {
       image(0).addElement(addr, CONTACT_BANK_SIZE);
       memset(data(addr), 0x00, CONTACT_BANK_SIZE);
@@ -212,11 +246,13 @@ bool
 D578UVCodeplug::encodeContacts(const Flags &flags, Context &ctx, const ErrorStack &err) {
   Q_UNUSED(flags); Q_UNUSED(err)
 
-  QVector<DigitalContact*> contacts;
+  QVector<DMRContact*> contacts;
   // Encode contacts and also collect id<->index map
   for (int i=0; i<ctx.config()->contacts()->digitalCount(); i++) {
-    ContactElement con(data(CONTACT_BANK_0+i*CONTACT_SIZE));
-    DigitalContact *contact = ctx.config()->contacts()->digitalContact(i);
+    uint32_t bank_addr = CONTACT_BLOCK_0 + (i/CONTACTS_PER_BANK)*CONTACT_BANK_SIZE;
+    uint32_t addr = bank_addr + (i%CONTACTS_PER_BANK)*CONTACT_SIZE;
+    ContactElement con(data(addr));
+    DMRContact *contact = ctx.config()->contacts()->digitalContact(i);
     if(! con.fromContactObj(contact, ctx))
       return false;
     ((uint32_t *)data(CONTACT_INDEX_LIST))[i] = qToLittleEndian(i);
@@ -224,12 +260,12 @@ D578UVCodeplug::encodeContacts(const Flags &flags, Context &ctx, const ErrorStac
   }
   // encode index map for contacts
   std::sort(contacts.begin(), contacts.end(),
-            [](DigitalContact *a, DigitalContact *b) {
+            [](DMRContact *a, DMRContact *b) {
     return a->number() < b->number();
   });
   for (int i=0; i<contacts.size(); i++) {
     ContactMapElement el(data(CONTACT_ID_MAP + i*CONTACT_ID_ENTRY_SIZE));
-    el.setID(contacts[i]->number(), (DigitalContact::GroupCall==contacts[i]->type()));
+    el.setID(contacts[i]->number(), (DMRContact::GroupCall==contacts[i]->type()));
     el.setIndex(ctx.index(contacts[i]));
   }
   return true;

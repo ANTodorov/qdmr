@@ -9,7 +9,7 @@
 #include "contact.hh"
 #include "tyt_extensions.hh"
 
-class DigitalContact;
+class DMRContact;
 class Zone;
 class RXGroupList;
 class ScanList;
@@ -50,7 +50,7 @@ public:
     enum PrivacyType {
       PRIV_NONE = 0,                ///< No privacy.
       PRIV_BASIC = 1,               ///< Basic privacy.
-      PRIV_ENHANCED = 2             ///< Enhenced privacy.
+      PRIV_ENHANCED = 2             ///< Enhanced privacy.
     };
 
     /** TX Admit criterion. */
@@ -81,10 +81,10 @@ public:
     /** Sets the mode of the channel. */
     virtual void setMode(Mode setMode);
 
-    /** Retuns the bandwidth of the (analog) channel. */
-    virtual AnalogChannel::Bandwidth bandwidth() const;
+    /** Returns the bandwidth of the (analog) channel. */
+    virtual FMChannel::Bandwidth bandwidth() const;
     /** Sets the bandwidth of the (analog) channel. */
-    virtual void setBandwidth(AnalogChannel::Bandwidth bw);
+    virtual void setBandwidth(FMChannel::Bandwidth bw);
 
     /** Returns @c true if the channel has auto scan enabled. */
     virtual bool autoScan() const;
@@ -107,9 +107,9 @@ public:
     virtual void enableRXOnly(bool enable);
 
     /** Returns the time slot of this channel. */
-    virtual DigitalChannel::TimeSlot timeSlot() const;
+    virtual DMRChannel::TimeSlot timeSlot() const;
     /** Sets the time slot of this channel. */
-    virtual void setTimeSlot(DigitalChannel::TimeSlot ts);
+    virtual void setTimeSlot(DMRChannel::TimeSlot ts);
 
     /** Returns the color code of this channel. */
     virtual uint8_t colorCode() const;
@@ -244,9 +244,9 @@ public:
     virtual void setName(const QString &setName);
 
     /** Constructs a generic @c Channel object from the codeplug channel. */
-    virtual Channel *toChannelObj() const;
+    virtual Channel *toChannelObj(const ErrorStack &err=ErrorStack()) const;
     /** Links a previously constructed channel to the rest of the configuration. */
-    virtual bool linkChannelObj(Channel *c, Context &ctx) const;
+    virtual bool linkChannelObj(Channel *c, Context &ctx, const ErrorStack &err=ErrorStack()) const;
     /** Initializes this codeplug channel from the given generic configuration. */
     virtual void fromChannelObj(const Channel *c, Context &ctx);
   };
@@ -276,9 +276,9 @@ public:
     virtual void setDMRId(uint32_t id);
 
     /** Returns the call-type of the contact. */
-    virtual DigitalContact::Type callType() const;
+    virtual DMRContact::Type callType() const;
     /** Sets the call-type of the contact. */
-    virtual void setCallType(DigitalContact::Type type);
+    virtual void setCallType(DMRContact::Type type);
 
     /** Returns @c true if the ring-tone is enabled for this contact. */
     virtual bool ringTone() const;
@@ -291,9 +291,9 @@ public:
     virtual void setName(const QString &nm);
 
     /** Encodes the give contact. */
-    virtual bool fromContactObj(const DigitalContact *contact);
+    virtual bool fromContactObj(const DMRContact *contact);
     /** Creates a contact. */
-    virtual DigitalContact *toContactObj() const;
+    virtual DMRContact *toContactObj() const;
   };
 
   /** Represents a zone within the codeplug.
@@ -305,11 +305,11 @@ public:
   class ZoneElement: public Codeplug::Element
   {
   protected:
-    /** Construtor. */
+    /** Constructor. */
     ZoneElement(uint8_t *ptr, size_t size);
 
   public:
-    /** Construtor. */
+    /** Constructor. */
     ZoneElement(uint8_t *ptr);
     /** Desturctor. */
     virtual ~ZoneElement();
@@ -374,7 +374,7 @@ public:
 
   /** Represents a scan list within the codeplug.
    *
-   * Memory layout of encoded scan list:
+   * Memory layout of encoded scan list (0x0068 bytes):
    * @verbinclude tyt_scanlist.txt */
   class ScanListElement: public Codeplug::Element
   {
@@ -391,7 +391,7 @@ public:
     bool isValid() const;
     void clear();
 
-    /** Retruns the name of the scan list. */
+    /** Returns the name of the scan list. */
     virtual QString name() const;
     /** Sets the name of the scan list. */
     virtual void setName(const QString &nm);
@@ -557,7 +557,7 @@ public:
     /** Sets the scan analog hang time. */
     virtual void setScanAnalogHangTime(unsigned ms);
 
-    /** Retuns @c true if the backlight is always on. */
+    /** Returns @c true if the backlight is always on. */
     virtual bool backlightIsAlways() const;
     /** Returns the backlight time. */
     virtual unsigned backlightTime() const;
@@ -566,7 +566,7 @@ public:
     /** Turns the backlight always on. */
     virtual void backlightTimeSetAlways();
 
-    /** Retuns @c true if the keypad lock is manual. */
+    /** Returns @c true if the keypad lock is manual. */
     virtual bool keypadLockIsManual() const;
     /** Returns the keypad lock time. */
     virtual unsigned keypadLockTime() const;
@@ -692,7 +692,7 @@ public:
 
   /** Represents all menu settings within the codeplug on the radio.
    *
-   * Memory representaion of the menu settings:
+   * Memory representation of the menu settings:
    * @verbinclude tyt_menusettings.txt */
   class MenuSettingsElement: public Codeplug::Element
   {
@@ -907,7 +907,7 @@ public:
     OneTouchSettingElement(uint8_t *ptr, size_t size);
 
   public:
-    /** Constuctor. */
+    /** Constructor. */
     explicit OneTouchSettingElement(uint8_t *ptr);
     /** Destructor. */
     virtual ~OneTouchSettingElement();
@@ -1074,7 +1074,7 @@ public:
 
     void clear();
 
-    /** Retunrs @c true if the n-th "enhanced" key (128bit) is set.
+    /** Returns @c true if the n-th "enhanced" key (128bit) is set.
      * That is, if it is not filled with 0xff. */
     virtual bool isEnhancedKeySet(unsigned n) const;
     /** Returns the n-th "enhanced" key (128bit). */
@@ -1082,7 +1082,7 @@ public:
     /** Sets the n-th "enhanced" key (128bit). */
     virtual void setEnhancedKey(unsigned n, const QByteArray &key);
 
-    /** Retunrs @c true if the n-th "basic" key (16bit) is set.
+    /** Returns @c true if the n-th "basic" key (16bit) is set.
      * That is, if it is not filled with 0xff. */
     virtual bool isBasicKeySet(unsigned n) const;
     /** Returns the n-th "basic" key (16bit). */

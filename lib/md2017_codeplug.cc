@@ -1,5 +1,4 @@
 #include "md2017_codeplug.hh"
-#include "codeplugcontext.hh"
 #include "logger.hh"
 
 #define NUM_CHANNELS                3000
@@ -47,6 +46,25 @@
 #define ADDR_VFO_CHANNEL_A      0x02ef00
 #define ADDR_VFO_CHANNEL_B      0x02ef40
 
+/* ********************************************************************************************* *
+ * MD2017Codeplug::ContactElement
+ * ********************************************************************************************* */
+MD2017Codeplug::ContactElement::ContactElement(uint8_t *ptr, size_t size)
+  : TyTCodeplug::ContactElement(ptr, size)
+{
+  // pass...
+}
+
+MD2017Codeplug::ContactElement::ContactElement(uint8_t *ptr)
+  : TyTCodeplug::ContactElement(ptr)
+{
+  // pass...
+}
+
+bool
+MD2017Codeplug::ContactElement::isValid() const {
+  return Codeplug::Element::isValid() && (! name().isEmpty());
+}
 
 
 MD2017Codeplug::MD2017Codeplug(QObject *parent)
@@ -117,15 +135,20 @@ MD2017Codeplug::encodeChannels(Config *config, const Flags &flags, Context &ctx,
 
 bool
 MD2017Codeplug::createChannels(Config *config, Context &ctx, const ErrorStack &err) {
+  Q_UNUSED(err);
+
   for (int i=0; i<NUM_CHANNELS; i++) {
     ChannelElement chan(data(ADDR_CHANNELS+i*CHANNEL_SIZE));
     if (! chan.isValid())
-      break;
-    if (Channel *obj = chan.toChannelObj()) {
-      config->channelList()->add(obj); ctx.add(obj, i+1);
+      continue;
+    ErrorStack err;
+    if (Channel *obj = chan.toChannelObj(err)) {
+      config->channelList()->add(obj);
+      ctx.add(obj, i+1);
     } else {
-      errMsg(err) << "Invlaid channel at index %" << i << ".";
-      return false;
+      logWarn() << "Cannot decode channel at index " << i << ":\n"
+                << err.format(" ");
+      continue;
     }
   }
   return true;
@@ -133,13 +156,19 @@ MD2017Codeplug::createChannels(Config *config, Context &ctx, const ErrorStack &e
 
 bool
 MD2017Codeplug::linkChannels(Context &ctx, const ErrorStack &err) {
+  Q_UNUSED(err);
+
   for (int i=0; i<NUM_CHANNELS; i++) {
     ChannelElement chan(data(ADDR_CHANNELS+i*CHANNEL_SIZE));
-    if (! chan.isValid())
-      break;
-    if (! chan.linkChannelObj(ctx.get<Channel>(i+1), ctx)) {
-      errMsg(err) << "Cannot link channel at index " << i << ".";
-      return false;
+
+    if ((! chan.isValid()) || (! ctx.has<Channel>(i+1)))
+      continue;
+
+    ErrorStack err;
+    if (! chan.linkChannelObj(ctx.get<Channel>(i+1), ctx, err)) {
+      logWarn() << "Cannot link channel at index " << i << ":\n"
+                << err.format(" ");
+      continue;
     }
   }
   return true;
@@ -171,11 +200,11 @@ MD2017Codeplug::createContacts(Config *config, Context &ctx, const ErrorStack &e
   for (int i=0; i<NUM_CONTACTS; i++) {
     ContactElement cont(data(ADDR_CONTACTS+i*CONTACT_SIZE));
     if (! cont.isValid())
-      break;
-    if (DigitalContact *obj = cont.toContactObj()) {
+      continue;
+    if (DMRContact *obj = cont.toContactObj()) {
       config->contacts()->add(obj); ctx.add(obj, i+1);
     } else {
-      errMsg(err) << "Invlaid contact at index " << i << ".";
+      errMsg(err) << "Invalid contact at index " << i << ".";
       return false;
     }
   }
@@ -213,11 +242,11 @@ MD2017Codeplug::createZones(Config *config, Context &ctx, const ErrorStack &err)
   for (int i=0; i<NUM_ZONES; i++) {
     ZoneElement zone(data(ADDR_ZONES+i*ZONE_SIZE));
     if (! zone.isValid())
-      break;
+      continue;
     if (Zone *obj = zone.toZoneObj()) {
       config->zones()->add(obj); ctx.add(obj, i+1);
     } else {
-      errMsg(err) << "Invlaid zone at index " << i << ".";
+      errMsg(err) << "Invalid zone at index " << i << ".";
       return false;
     }
   }
@@ -230,7 +259,7 @@ MD2017Codeplug::linkZones(Context &ctx, const ErrorStack &err) {
   for (int i=0; i<NUM_ZONES; i++) {
     ZoneElement zone(data(ADDR_ZONES+i*ZONE_SIZE));
     if (! zone.isValid())
-      break;
+      continue;
     if (! zone.linkZone(ctx.get<Zone>(i+1), ctx)) {
       errMsg(err) << "Cannot link zone at index " << i << ".";
       return false;
@@ -269,11 +298,11 @@ MD2017Codeplug::createGroupLists(Config *config, Context &ctx, const ErrorStack 
   for (int i=0; i<NUM_GROUPLISTS; i++) {
     GroupListElement glist(data(ADDR_GROUPLISTS+i*GROUPLIST_SIZE));
     if (! glist.isValid())
-      break;
+      continue;
     if (RXGroupList *obj = glist.toGroupListObj(ctx)) {
       config->rxGroupLists()->add(obj); ctx.add(obj, i+1);
     } else {
-      errMsg(err) << "Invlaid group list at index " << i << ".";
+      errMsg(err) << "Invalid group list at index " << i << ".";
       return false;
     }
   }
@@ -285,7 +314,7 @@ MD2017Codeplug::linkGroupLists(Context &ctx, const ErrorStack &err) {
   for (int i=0; i<NUM_GROUPLISTS; i++) {
     GroupListElement glist(data(ADDR_GROUPLISTS+i*GROUPLIST_SIZE));
     if (! glist.isValid())
-      break;
+      continue;
     if (! glist.linkGroupListObj(ctx.get<RXGroupList>(i+1), ctx)) {
       errMsg(err) << "Cannot link group list at index " << i << ".";
       return false;
@@ -321,11 +350,11 @@ MD2017Codeplug::createScanLists(Config *config, Context &ctx, const ErrorStack &
   for (int i=0; i<NUM_SCANLISTS; i++) {
     ScanListElement scan(data(ADDR_SCANLISTS + i*SCANLIST_SIZE));
     if (! scan.isValid())
-      break;
+      continue;
     if (ScanList *obj = scan.toScanListObj(ctx)) {
       config->scanlists()->add(obj); ctx.add(obj, i+1);
     } else {
-      errMsg(err) << "Invlaid scanlist at index " << i << ".";
+      errMsg(err) << "Invalid scanlist at index " << i << ".";
       return false;
     }
   }
@@ -337,8 +366,7 @@ MD2017Codeplug::linkScanLists(Context &ctx, const ErrorStack &err) {
   for (int i=0; i<NUM_SCANLISTS; i++) {
     ScanListElement scan(data(ADDR_SCANLISTS + i*SCANLIST_SIZE));
     if (! scan.isValid())
-      break;
-
+      continue;
     if (! scan.linkScanListObj(ctx.get<ScanList>(i+1), ctx)) {
       errMsg(err) << "Cannot link scan list at index" << i << ".";
       return false;
@@ -373,11 +401,11 @@ MD2017Codeplug::createPositioningSystems(Config *config, Context &ctx, const Err
   for (int i=0; i<NUM_GPSSYSTEMS; i++) {
     GPSSystemElement gps(data(ADDR_GPSSYSTEMS+i*GPSSYSTEM_SIZE));
     if (! gps.isValid())
-      break;
+      continue;
     if (GPSSystem *obj = gps.toGPSSystemObj()) {
       config->posSystems()->add(obj); ctx.add(obj, i+1);
     } else {
-      errMsg(err) << "Invlaid GPS system at index " << i << ".";
+      errMsg(err) << "Invalid GPS system at index " << i << ".";
       return false;
     }
   }
@@ -390,7 +418,7 @@ MD2017Codeplug::linkPositioningSystems(Context &ctx, const ErrorStack &err) {
   for (int i=0; i<NUM_GPSSYSTEMS; i++) {
     GPSSystemElement gps(data(ADDR_GPSSYSTEMS+i*GPSSYSTEM_SIZE));
     if (! gps.isValid())
-      break;
+      continue;
     if (! gps.linkGPSSystemObj(ctx.get<GPSSystem>(i+1), ctx)) {
       errMsg(err) << "Cannot link GPS system at index " << i << ".";
       return false;

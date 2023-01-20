@@ -14,16 +14,16 @@
  * Implementation of DigitalChannelDialog
  * ********************************************************************************************* */
 DigitalChannelDialog::DigitalChannelDialog(Config *config, QWidget *parent)
-  : QDialog(parent), _config(config), _myChannel(new DigitalChannel(this)), _channel(nullptr)
+  : QDialog(parent), _config(config), _myChannel(new DMRChannel(this)), _channel(nullptr)
 {
   construct();
 }
 
-DigitalChannelDialog::DigitalChannelDialog(Config *config, DigitalChannel *channel, QWidget *parent)
+DigitalChannelDialog::DigitalChannelDialog(Config *config, DMRChannel *channel, QWidget *parent)
   : QDialog(parent), _config(config), _myChannel(nullptr), _channel(channel)
 {
   if (_channel) {
-    _myChannel = _channel->clone()->as<DigitalChannel>();
+    _myChannel = _channel->clone()->as<DMRChannel>();
     _myChannel->setParent(parent);
   }
   construct();
@@ -33,6 +33,9 @@ void
 DigitalChannelDialog::construct() {
   setupUi(this);
   Settings settings;
+
+  if (settings.hideChannelNote())
+    hintLabel->setVisible(false);
 
   Application *app = qobject_cast<Application *>(qApp);
   DMRRepeaterFilter *filter = new DMRRepeaterFilter(app->repeater(), app->position(), this);
@@ -60,11 +63,11 @@ DigitalChannelDialog::construct() {
     if (_myChannel && (_myChannel->scanList() == _config->scanlists()->scanlist(i)) )
       scanList->setCurrentIndex(i+1);
   }
-  txAdmit->setItemData(0, unsigned(DigitalChannel::Admit::Always));
-  txAdmit->setItemData(1, unsigned(DigitalChannel::Admit::Free));
-  txAdmit->setItemData(2, unsigned(DigitalChannel::Admit::ColorCode));
-  timeSlot->setItemData(0, unsigned(DigitalChannel::TimeSlot::TS1));
-  timeSlot->setItemData(1, unsigned(DigitalChannel::TimeSlot::TS2));
+  txAdmit->setItemData(0, unsigned(DMRChannel::Admit::Always));
+  txAdmit->setItemData(1, unsigned(DMRChannel::Admit::Free));
+  txAdmit->setItemData(2, unsigned(DMRChannel::Admit::ColorCode));
+  timeSlot->setItemData(0, unsigned(DMRChannel::TimeSlot::TS1));
+  timeSlot->setItemData(1, unsigned(DMRChannel::TimeSlot::TS2));
   populateRXGroupListBox(rxGroupList, _config->rxGroupLists(),
                          (nullptr != _myChannel ? _myChannel->groupListObj() : nullptr));
   txContact->addItem(tr("[None]"), QVariant::fromValue(nullptr));
@@ -87,8 +90,8 @@ DigitalChannelDialog::construct() {
   roaming->addItem(tr("[Default]"), QVariant::fromValue(DefaultRoamingZone::get()));
   if (_myChannel && (_myChannel->roamingZone() == DefaultRoamingZone::get()))
     roaming->setCurrentIndex(1);
-  for (int i=0; i<_config->roaming()->count(); i++) {
-    RoamingZone *zone = _config->roaming()->zone(i);
+  for (int i=0; i<_config->roamingZones()->count(); i++) {
+    RoamingZone *zone = _config->roamingZones()->zone(i);
     roaming->addItem(zone->name(), QVariant::fromValue(zone));
     if (_myChannel && (_myChannel->roamingZone() == zone))
       roaming->setCurrentIndex(i+2);
@@ -123,14 +126,14 @@ DigitalChannelDialog::construct() {
   }
   rxOnly->setChecked(_myChannel->rxOnly());
   switch (_myChannel->admit()) {
-  case DigitalChannel::Admit::Always: txAdmit->setCurrentIndex(0); break;
-  case DigitalChannel::Admit::Free: txAdmit->setCurrentIndex(1); break;
-  case DigitalChannel::Admit::ColorCode: txAdmit->setCurrentIndex(2); break;
+  case DMRChannel::Admit::Always: txAdmit->setCurrentIndex(0); break;
+  case DMRChannel::Admit::Free: txAdmit->setCurrentIndex(1); break;
+  case DMRChannel::Admit::ColorCode: txAdmit->setCurrentIndex(2); break;
   }
   colorCode->setValue(_myChannel->colorCode());
-  if (DigitalChannel::TimeSlot::TS1 == _myChannel->timeSlot())
+  if (DMRChannel::TimeSlot::TS1 == _myChannel->timeSlot())
     timeSlot->setCurrentIndex(0);
-  else if (DigitalChannel::TimeSlot::TS2 == _myChannel->timeSlot())
+  else if (DMRChannel::TimeSlot::TS2 == _myChannel->timeSlot())
     timeSlot->setCurrentIndex(1);
   if (! _myChannel->defaultVOX()) {
     voxDefault->setChecked(false); voxValue->setEnabled(true);
@@ -146,9 +149,10 @@ DigitalChannelDialog::construct() {
   connect(powerDefault, SIGNAL(toggled(bool)), this, SLOT(onPowerDefaultToggled(bool)));
   connect(totDefault, SIGNAL(toggled(bool)), this, SLOT(onTimeoutDefaultToggled(bool)));
   connect(voxDefault, SIGNAL(toggled(bool)), this, SLOT(onVOXDefaultToggled(bool)));
+  connect(hintLabel, SIGNAL(linkActivated(QString)), this, SLOT(onHideChannelHint()));
 }
 
-DigitalChannel *
+DMRChannel *
 DigitalChannelDialog::channel()
 {
   _myChannel->setRadioIdObj(dmrID->currentData().value<DMRRadioID*>());
@@ -165,11 +169,11 @@ DigitalChannelDialog::channel()
     _myChannel->setTimeout(totValue->value());
   _myChannel->setRXOnly(rxOnly->isChecked());
   _myChannel->setScanList(scanList->currentData().value<ScanList *>());
-  _myChannel->setAdmit(DigitalChannel::Admit(txAdmit->currentData().toUInt()));
+  _myChannel->setAdmit(DMRChannel::Admit(txAdmit->currentData().toUInt()));
   _myChannel->setColorCode(colorCode->value());
-  _myChannel->setTimeSlot(DigitalChannel::TimeSlot(timeSlot->currentData().toUInt()));
+  _myChannel->setTimeSlot(DMRChannel::TimeSlot(timeSlot->currentData().toUInt()));
   _myChannel->setGroupListObj(rxGroupList->currentData().value<RXGroupList *>());
-  _myChannel->setTXContactObj(txContact->currentData().value<DigitalContact *>());
+  _myChannel->setTXContactObj(txContact->currentData().value<DMRContact *>());
   _myChannel->setAPRSObj(gpsSystem->currentData().value<PositioningSystem *>());
   _myChannel->setRoamingZone(roaming->currentData().value<RoamingZone *>());
   if (voxDefault->isChecked())
@@ -177,7 +181,7 @@ DigitalChannelDialog::channel()
   else
     _myChannel->setVOX(voxValue->value());
 
-  DigitalChannel *channel = _myChannel;
+  DMRChannel *channel = _myChannel;
   if (nullptr == _channel) {
     _myChannel->setParent(nullptr);
     _myChannel = nullptr;
@@ -197,8 +201,8 @@ DigitalChannelDialog::onRepeaterSelected(const QModelIndex &index) {
         channelName->completer()->completionModel())->mapToSource(index);
   src = qobject_cast<QAbstractProxyModel*>(
         channelName->completer()->model())->mapToSource(src);
-  double rx = app->repeater()->repeater(src.row())->txFrequency();
-  double tx = app->repeater()->repeater(src.row())->rxFrequency();
+  double rx = app->repeater()->repeater(src.row())->rxFrequency();
+  double tx = app->repeater()->repeater(src.row())->txFrequency();
   colorCode->setValue(app->repeater()->repeater(src.row())->colorCode());
   txFrequency->setText(QString::number(tx, 'f'));
   rxFrequency->setText(QString::number(rx, 'f'));
@@ -217,5 +221,12 @@ DigitalChannelDialog::onTimeoutDefaultToggled(bool checked) {
 void
 DigitalChannelDialog::onVOXDefaultToggled(bool checked) {
   voxValue->setEnabled(! checked);
+}
+
+void
+DigitalChannelDialog::onHideChannelHint() {
+  Settings settings;
+  settings.setHideChannelNote(true);
+  hintLabel->setVisible(false);
 }
 

@@ -24,7 +24,7 @@ public:
   // QAbstractListModel interface
   /** Implements QAbstractTableModel, returns number of rows. */
   int rowCount(const QModelIndex &index) const;
-  /** Implements QAbstractTableModel, returns number of colums. */
+  /** Implements QAbstractTableModel, returns number of columns. */
   int columnCount(const QModelIndex &index) const;
 
 signals:
@@ -97,7 +97,7 @@ public:
 
 public:
   // QAbstractTableModel interface
-  /** Implements QAbstractTableModel, returns number of colums. */
+  /** Implements QAbstractTableModel, returns number of columns. */
   int columnCount(const QModelIndex &index) const;
   /** Implements QAbstractTableModel, returns data at cell. */
   QVariant data(const QModelIndex &index, int role=Qt::DisplayRole) const;
@@ -112,6 +112,40 @@ class ChannelRefListWrapper: public GenericListWrapper
 
 public:
   ChannelRefListWrapper(ChannelRefList *list, QObject *parent=nullptr);
+
+public:
+  // Implementation of QAbstractListModel
+  /** Returns the cell data at given index, implements the QAbstractTableModel. */
+  QVariant data(const QModelIndex &index, int role=Qt::DisplayRole) const;
+  /** Implementation of QAbstractListModel, returns the header data at the given section. */
+  QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
+};
+
+
+class RoamingChannelListWrapper: public GenericTableWrapper
+{
+  Q_OBJECT
+
+public:
+  RoamingChannelListWrapper(RoamingChannelList *list, QObject *parent=nullptr);
+
+public:
+  // Implementation of QAbstractTableModel
+  /** Returns the number of columns, implements the QAbstractTableModel. */
+  int columnCount(const QModelIndex &index) const;
+  /** Returns the cell data at given index, implements the QAbstractTableModel. */
+  QVariant data(const QModelIndex &index, int role=Qt::DisplayRole) const;
+  /** Implementation of QAbstractListModel, returns the header data at the given section. */
+  QVariant headerData(int section, Qt::Orientation orientation, int role = Qt::DisplayRole) const;
+};
+
+
+class RoamingChannelRefListWrapper: public GenericListWrapper
+{
+  Q_OBJECT
+
+public:
+  RoamingChannelRefListWrapper(RoamingChannelRefList *list, QObject *parent=nullptr);
 
 public:
   // Implementation of QAbstractListModel

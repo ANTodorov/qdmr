@@ -28,7 +28,7 @@
 </para>
 
 <para> 
-  There are also service numbers (free of charge). If messages are send to them, certain 
+  There are also service numbers (free of charge). If messages are sent to them, certain 
   information can be retrieved to forwarded to other networks (e.g. to the 
   <glossterm>DAPNET</glossterm>). In Germany (and other countries) there are:
 </para>
@@ -43,8 +43,8 @@
       <listitem><para>Send <token>wx CITY</token> and you will receive the weather at the specified
         city.</para></listitem>
       <listitem><para>Send <token>gps</token> and the last GPS position is returned that you have 
-        send to the DMR network.</para></listitem>
-      <listitem><para>With <token>gps CALL</token> you can retrieve the last position send by the 
+        sent to the DMR network.</para></listitem>
+      <listitem><para>With <token>gps CALL</token> you can retrieve the last position sent by the 
         specified call.</para></listitem>
       <listitem><para>Send <token>rssi</token> and you will receive a signal report from the 
         repeater.</para></listitem>
@@ -68,9 +68,9 @@
 <para>
   As mentioned in the previous section, it is possible to report the own position via the 
   DMR network to the APRS network. This position can then be tracked at for example 
-  <link xlink:href="https://aprs.fi">aprs.fi</link>. To do that, a radio with a build-in 
+  <link xlink:href="https://aprs.fi">aprs.fi</link>. To do that, a radio with a built-in 
   GPS receiver is required. But not even these devices are expensive anymore. Simple DMR 
-  hand-helds with build-in GPS receivers are available for about 120€.
+  hand-helds with built-in GPS receivers are available for about 120€.
 </para>
 <para>
   Beside the text message services, it is also possible to transmit the position to the DMR 

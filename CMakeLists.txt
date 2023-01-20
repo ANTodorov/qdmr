@@ -1,5 +1,5 @@
 cmake_minimum_required(VERSION 3.0.0)
-project(qdmr VERSION 0.10.2)
+project(qdmr VERSION 0.11.1)
 
 set(RELEASE_SUFFIX "")
 
@@ -7,6 +7,8 @@ option(BUILD_TESTS "Build test programs" OFF)
 option(BUILD_DOCS  "Build API documentation" OFF)
 option(BUILD_MAN   "Build man page for dmrconf" OFF)
 option(INSTALL_UDEV_RULES "Install udev rules file." ON)
+option(INSTALL_BUNDLE "Installs QDMR as an AppBundle under MacOS X" OFF)
+option(BUNDLE_PATH "Where to install the MacOS X application bundle." "~/Applications")
 
 set(CMAKE_MODULE_PATH ${CMAKE_MODULE_PATH} ${PROJECT_SOURCE_DIR}/cmake)
 
@@ -56,6 +58,10 @@ LINK_DIRECTORIES(${PROJECT_BINARY_DIR}/src)
 set(CORE_LIBS ${Qt5Core_LIBRARIES} ${Qt5Core_QTMAIN_LIBRARIES} ${Qt5Network_LIBRARIES}
   ${Qt5Positioning_LIBRARIES} ${Qt5SerialPort_LIBRARIES} ${LIBUSB_1_LIBRARIES}
   ${YAMLCPP_LIBRARIES})
+if (${BUILD_TESTS})
+  set(CORE_LIBS ${CORE_LIBS} ${Qt5Test_LIBRARIES})
+endif(${BUILD_TESTS})
+
 set(LIBS ${CORE_LIBS} ${Qt5Widgets_LIBRARIES} ${Qt5UiTools_LIBRARIES})
 
 IF (UNIX AND APPLE)
@@ -89,6 +95,9 @@ IF(UNIX AND APPLE)
  SET(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
  message(STATUS "RPATH: ${CMAKE_INSTALL_RPATH}")
 ENDIF(UNIX AND APPLE)
+
+# Directory to install translations to
+SET(LOCALE_DIRECTORY "${CMAKE_INSTALL_PREFIX}/share/locale/")
 
 # Sources...
 add_subdirectory(lib)

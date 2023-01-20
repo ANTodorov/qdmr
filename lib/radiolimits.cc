@@ -354,7 +354,17 @@ RadioLimitUInt::verify(const ConfigItem *item, const QMetaProperty &prop, RadioL
 
 
 /* ********************************************************************************************* *
- * Implementation of RadioLimitUInt
+ * Implementation of RadioLimitDMRId
+ * ********************************************************************************************* */
+RadioLimitDMRId::RadioLimitDMRId(QObject *parent)
+  : RadioLimitUInt(1, 16777215, -1, parent)
+{
+  // pass...
+}
+
+
+/* ********************************************************************************************* *
+ * Implementation of RadioLimitEnum
  * ********************************************************************************************* */
 RadioLimitEnum::RadioLimitEnum(const std::initializer_list<unsigned> &values, QObject *parent)
   : RadioLimitValue(parent), _values(values)
@@ -417,11 +427,12 @@ RadioLimitFrequencies::RadioLimitFrequencies(QObject *parent)
   // pass...
 }
 
-RadioLimitFrequencies::RadioLimitFrequencies(const RangeList &ranges, QObject *parent)
-  : RadioLimitValue(parent), _frequencyRanges()
+RadioLimitFrequencies::RadioLimitFrequencies(const RangeList &ranges, bool warnOnly, QObject *parent)
+  : RadioLimitValue(parent), _frequencyRanges(), _warnOnly(warnOnly)
 {
-  for (auto range=ranges.begin(); range!=ranges.end(); range++)
+  for (auto range=ranges.begin(); range!=ranges.end(); range++) {
     _frequencyRanges.append(FrequencyRange(range->first, range->second));
+  }
 }
 
 bool
@@ -439,10 +450,46 @@ RadioLimitFrequencies::verify(const ConfigItem *item, const QMetaProperty &prop,
       return true;
   }
 
-  auto &msg = context.newMessage(
-        context.ignoreFrequencyLimits() ?
-          RadioLimitIssue::Warning : RadioLimitIssue::Critical);
+  if (context.ignoreFrequencyLimits() || (0 == _frequencyRanges.size()) || _warnOnly) {
+    auto &msg = context.newMessage(RadioLimitIssue::Warning);
+    msg << "Frequency " << value << "MHz is outside of allowed frequency ranges or "
+        << "range cannot be determined.";
+    return true;
+  }
+
+  auto &msg = context.newMessage(RadioLimitIssue::Critical);
   msg << "Frequency " << value << "MHz is outside of allowed frequency ranges.";
+  return false;
+}
+
+
+/* ********************************************************************************************* *
+ * Implementation of RadioLimitTransmitFrequencies
+ * ********************************************************************************************* */
+RadioLimitTransmitFrequencies::RadioLimitTransmitFrequencies(QObject *parent)
+  : RadioLimitFrequencies(parent)
+{
+  // pass...
+}
+
+RadioLimitTransmitFrequencies::RadioLimitTransmitFrequencies(const RangeList &ranges, QObject *parent)
+  : RadioLimitFrequencies(ranges, false, parent)
+{
+  // pass...
+}
+
+bool
+RadioLimitTransmitFrequencies::verify(const ConfigItem *item, const QMetaProperty &prop, RadioLimitContext &context) const {
+  if (QVariant::Double != prop.type()) {
+    auto &msg = context.newMessage(RadioLimitIssue::Critical);
+    msg << "Cannot check property " << prop.name() << ": Expected frequency in MHz.";
+    return false;
+  }
+
+  if (item->is<Channel>() && (! item->as<Channel>()->rxOnly())) {
+    return RadioLimitFrequencies::verify(item, prop, context);
+  }
+
   return true;
 }
 
@@ -589,7 +636,7 @@ RadioLimitObjRef::verify(const ConfigItem *item, const QMetaProperty &prop, Radi
 
     auto &msg = context.newMessage(RadioLimitIssue::Warning);
     msg << "Property '" << prop.name() << "' must refer to an instances of "
-        << QStringList::fromSet(_types).join(", ") << ".";
+        << QStringList(_types.begin(), _types.end()).join(", ") << ".";
 
     return true;
   }
@@ -597,7 +644,7 @@ RadioLimitObjRef::verify(const ConfigItem *item, const QMetaProperty &prop, Radi
   if (! validType(ref->as<ConfigObject>()->metaObject())) {
     auto &msg = context.newMessage(RadioLimitIssue::Critical);
     msg << "Property '" << prop.name() << "' must refer to an instances of "
-        << QStringList::fromSet(_types).join(", ") << ".";
+        << QStringList(_types.begin(), _types.end()).join(", ") << ".";
     return false;
   }
 
@@ -762,7 +809,7 @@ RadioLimitRefList::verify(const ConfigItem *item, const QMetaProperty &prop, Rad
 
   const ConfigObjectRefList *plist = prop.read(item).value<ConfigObjectRefList*>();
   if ((0 <= _minSize) && (_minSize > plist->count())) {
-    auto &msg = context.newMessage(RadioLimitIssue::Critical);
+    auto &msg = context.newMessage(RadioLimitIssue::Warning);
     msg << "List '" << prop.name() << "' requires at least " << _minSize
         << " elements, " << plist->count() << " elements found.";
     return false;
@@ -779,7 +826,7 @@ RadioLimitRefList::verify(const ConfigItem *item, const QMetaProperty &prop, Rad
     if (! validType(plist->get(i)->metaObject())) {
       auto &msg = context.newMessage(RadioLimitIssue::Critical);
       msg << "Reference to " << plist->get(i)->metaObject()->className() << " is not allowed here. "
-          << "Must be one of " << QStringList::fromSet(_types).join(", ") << ".";
+          << "Must be one of " << QStringList(_types.begin(), _types.end()).join(", ") << ".";
       return false;
     }
   }
@@ -794,6 +841,62 @@ RadioLimitRefList::validType(const QMetaObject *type) const {
   if (type->superClass())
     return validType(type->superClass());
   return false;
+}
+
+
+/* ********************************************************************************************* *
+ * Implementation of RadioLimitPrivateCallRefList
+ * ********************************************************************************************* */
+RadioLimitGroupCallRefList::RadioLimitGroupCallRefList(int minSize, int maxSize, QObject *parent)
+  : RadioLimitElement(parent), _minSize(minSize), _maxSize(maxSize)
+{
+  // pass...
+}
+
+bool
+RadioLimitGroupCallRefList::verify(const ConfigItem *item, const QMetaProperty &prop, RadioLimitContext &context) const {
+  if (! prop.isReadable()) {
+    auto &msg = context.newMessage(RadioLimitIssue::Critical);
+    msg << "Cannot check property " << prop.name() << ": Not readable.";
+    return false;
+  }
+
+  if (nullptr == prop.read(item).value<ConfigObjectRefList *>()) {
+    auto &msg = context.newMessage(RadioLimitIssue::Critical);
+    msg << "Cannot check property " << prop.name() << ": Not an instance of ConfigObjectRefList.";
+    return false;
+  }
+
+  const ConfigObjectRefList *plist = prop.read(item).value<ConfigObjectRefList*>();
+  if ((0 <= _minSize) && (_minSize > plist->count())) {
+    auto &msg = context.newMessage(RadioLimitIssue::Warning);
+    msg << "List '" << prop.name() << "' requires at least " << _minSize
+        << " elements, " << plist->count() << " elements found.";
+    return false;
+  }
+
+  if ((0 <= _maxSize) && (_maxSize < plist->count())) {
+    auto &msg = context.newMessage(RadioLimitIssue::Warning);
+    msg << "List '" << prop.name() << "' takes at most " << _minSize
+        << " elements, " << plist->count() << " elements found.";
+    return false;
+  }
+
+  for (int i=0; i<plist->count(); i++) {
+    if (! plist->get(i)->is<DMRContact>()) {
+      auto &msg = context.newMessage(RadioLimitIssue::Critical);
+      msg << "Reference to " << plist->get(i)->metaObject()->className() << " is not allowed here. "
+          << "Must be DigtialContact.";
+      return false;
+    }
+    if (DMRContact::GroupCall != plist->get(i)->as<DMRContact>()->type()) {
+      auto &msg = context.newMessage(RadioLimitIssue::Critical);
+      msg << "Expected reference to a group call digital contact.";
+      return false;
+    }
+  }
+
+  return true;
 }
 
 

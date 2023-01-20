@@ -5,10 +5,9 @@
 
 #include "anytone_codeplug.hh"
 #include "signaling.hh"
-#include "codeplugcontext.hh"
 
 class Channel;
-class DigitalContact;
+class DMRContact;
 class Zone;
 class RXGroupList;
 class ScanList;
@@ -19,30 +18,30 @@ class GPSSystem;
  *
  * In contrast to many other code-plugs, the code-plug for Anytone radios are spread over a large
  * memory area. The amount of fragmentation of the codeplug is overwhelming.
- * For example, while channels are organized more or less nicely in continous banks, zones are
+ * For example, while channels are organized more or less nicely in continuous banks, zones are
  * distributed throughout the entire code-plug. That is, the names of zones are located in a
  * different memory section that the channel lists. Some lists are defined though bit-masks others
  * by byte-masks. All bit-masks are positive, that is 1 indicates an enabled item while the
  * bit-mask for contacts is inverted.
  *
  * In general the code-plug is huge and complex. Moreover, the radio provides a huge amount of
- * options and features. To this end, reverse-engeneering this code-plug was a nightmare.
+ * options and features. To this end, reverse-engineering this code-plug was a nightmare.
  *
  * More over, the binary code-plug file generate by the windows CPS does not directly relate to
  * the data being written to the radio. To this end the code-plug has been reverse-engineered
- * using wireshark to monitor the USB communication between the windows CPS (running in a vritual
- * box) and the device. The latter makes the reverse-engineering particularily cumbersome.
+ * using wireshark to monitor the USB communication between the windows CPS (running in a virtual
+ * box) and the device. The latter makes the reverse-engineering particularly cumbersome.
  *
  * @section d868uvcpl Codeplug structure within radio
  * <table>
  *  <tr><th colspan="3">Channels</th></tr>
  *  <tr><th>Start</th>    <th>Size</th>        <th>Content</th></tr>
  *  <tr><td>024C1500</td> <td>000200</td>      <td>Bitmap of 4000 channels, default 0x00, 0x00 padded.</td></tr>
- *  <tr><td>00800000</td> <td>max. 002000</td> <td>Channel bank 0 of upto 128 channels,
+ *  <tr><td>00800000</td> <td>max. 002000</td> <td>Channel bank 0 of up to 128 channels,
  *   see @c AnytoneCodeplug::ChannelElement 64 b each. </td></tr>
- *  <tr><td>00840000</td> <td>max. 002000</td> <td>Channel bank 1 of upto 128 channels.</td></tr>
+ *  <tr><td>00840000</td> <td>max. 002000</td> <td>Channel bank 1 of up to 128 channels.</td></tr>
  *  <tr><td>...</td>      <td>...</td>         <td>...</td></tr>
- *  <tr><td>00FC0000</td> <td>max. 000800</td> <td>Channel bank 32, upto 32 channels.</td></tr>
+ *  <tr><td>00FC0000</td> <td>max. 000800</td> <td>Channel bank 32, up to 32 channels.</td></tr>
  *  <tr><td>00FC0800</td> <td>000040</td>      <td>VFO A settings,
  *    see @c AnytoneCodeplug::ChannelElement.</td></tr>
  *  <tr><td>00FC0840</td> <td>000040</td>      <td>VFO B settings,
@@ -54,24 +53,24 @@ class GPSSystem;
  *  <tr><td>01000000</td> <td>max. 01f400</td> <td>250 zones channel lists of 250 16bit indices each.
  *    0-based, little endian, default/padded=0xffff. Offset between channel lists 0x200, size of each list 0x1f4.</td></tr>
  *  <tr><td>02540000</td> <td>max. 001f40</td> <td>250 Zone names.
- *    Each zone name is upto 16 ASCII chars long and gets 0-padded to 32b.</td></tr>
+ *    Each zone name is up to 16 ASCII chars long and gets 0-padded to 32b.</td></tr>
  *
  *  <tr><th colspan="3">Contacts</th></tr>
  *  <tr><th>Start</th>    <th>Size</th>        <th>Content</th></tr>
  *  <tr><td>02600000</td> <td>max. 009C40</td> <td>Index list of valid contacts.
  *    10000 32bit indices, little endian, default 0xffffffff</td></tr>
  *  <tr><td>02640000</td> <td>000500</td>      <td>Contact bitmap, 10000 bit, inverted, default 0xff, 0x00 padded.</td></tr>
- *  <tr><td>02680000</td> <td>max. 0f4240</td> <td>10000 contacts,
+ *  <tr><td>02680000</td> <td>max. 0186a0</td> <td>Bank 1 of 1000 contacts,
  *    see @c AnytoneCodeplug::ContactElement. As each contact is 100b, they do not align with the
  *    16b blocks being transferred to the device. Hence contacts are organized internally in groups
- *    of 4 contacts forming a "bank". </td></tr>
+ *    of 4 contacts. There are 10 banks, each containing 1000 contacts. The offset between banks is 0x40000. </td></tr>
  *  <tr><td>04340000</td> <td>max. 013880</td> <td>DMR ID to contact index map,
  *    see @c AnytoneCodeplug::ContactMapElement. Sorted by ID, empty entries set to
  *    @c 0xffffffffffffffff.</td>
  *
  *  <tr><th colspan="3">Analog Contacts</th></tr>
  *  <tr><th>Start</th>    <th>Size</th>        <th>Content</th></tr>
- *  <tr><td>02900000</td> <td>000080</td>      <td>Index list of valid ananlog contacts.</td></tr>
+ *  <tr><td>02900000</td> <td>000080</td>      <td>Index list of valid analog contacts.</td></tr>
  *  <tr><td>02900100</td> <td>000080</td>      <td>Bytemap for 128 analog contacts.</td></tr>
  *  <tr><td>02940000</td> <td>max. 000180</td> <td>128 analog contacts.
  *    See @c AnytoneCodeplug::DTMFContactElement. As each analog contact is 24b, they do not align
@@ -141,7 +140,7 @@ class GPSSystem;
  *  <tr><td>025C0000</td> <td>000100</td> <td>4 analog quick-call settings.
  *   See @c AnytoneCodeplug::AnalogQuickCallElement.</td>
  *  <tr><td>025C0B00</td> <td>000010</td> <td>Status message bitmap.</td>
- *  <tr><td>025C0100</td> <td>000400</td> <td>Upto 32 status messages.
+ *  <tr><td>025C0100</td> <td>000400</td> <td>Up to 32 status messages.
  *    Length unknown, offset 0x20. ASCII 0x00 terminated and padded.</td>
  *  <tr><td>025C0500</td> <td>000360</td> <td>18 hot-key settings,
  *    see @c AnytoneCodeplug::HotKeyElement</td></tr>
@@ -191,12 +190,75 @@ class D868UVCodeplug : public AnytoneCodeplug
   Q_OBJECT
 
 public:
+  /** Represents the channel element for AnyTone D868UV devices.
+   *  This class derives from @c AnytoneCodeplug::ChannelElement and implements the device-specific
+   *  encoding of channels for the AnyTone D868UV.
+   *
+   *  Memory layout of the encoded channel element (size 0x0040 bytes):
+   *  @verbinclude d868uv_channel.txt */
+  class ChannelElement: public AnytoneCodeplug::ChannelElement
+  {
+  protected:
+    /** Hidden constructor. */
+    ChannelElement(uint8_t *ptr, unsigned size);
+
+  public:
+    /** Constructor. */
+    ChannelElement(uint8_t *ptr);
+
+    /** Returns @c true if ranging is enabled. */
+    virtual bool ranging() const;
+    /** Enables/disables ranging. */
+    virtual void enableRanging(bool enable);
+    /** Returns @c true if through mode is enabled. */
+    virtual bool throughMode() const;
+    /** Enables/disables though mode. */
+    virtual void enableThroughMode(bool enable);
+    /** Returns @c true if data ACK is enabled. */
+    virtual bool dataACK() const;
+    /** Enables/disables data ACK. */
+    virtual void enableDataACK(bool enable);
+
+    /** Returns @c true if TX APRS is enabled. */
+    virtual bool txDigitalAPRS() const;
+    /** Enables/disables TX APRS. */
+    virtual void enableTXDigitalAPRS(bool enable);
+    /** Returns the DMR APRS system index. */
+    virtual unsigned digitalAPRSSystemIndex() const;
+    /** Sets the DMR APRS system index. */
+    virtual void setDigitalAPRSSystemIndex(unsigned idx);
+
+    /** Returns the DMR encryption key index (+1), 0=Off. */
+    virtual unsigned dmrEncryptionKeyIndex() const;
+    /** Sets the DMR encryption key index (+1), 0=Off. */
+    virtual void setDMREncryptionKeyIndex(unsigned idx);
+    /** Returns @c true if multiple key encryption is enabled. */
+    virtual bool multipleKeyEncryption() const;
+    /** Enables/disables multiple key encryption. */
+    virtual void enableMultipleKeyEncryption(bool enable);
+    /** Returns @c true if random key is enabled. */
+    virtual bool randomKey() const;
+    /** Enables/disables random key. */
+    virtual void enableRandomKey(bool enable);
+    /** Returns @c true if SMS is enabled. */
+    virtual bool sms() const;
+    /** Enables/disables SMS. */
+    virtual void enableSMS(bool enable);
+
+    /** Constructs a generic @c Channel object from the codeplug channel. */
+    virtual Channel *toChannelObj(Context &ctx) const;
+    /** Links a previously constructed channel to the rest of the configuration. */
+    virtual bool linkChannelObj(Channel *c, Context &ctx) const;
+    /** Initializes this codeplug channel from the given generic configuration. */
+    virtual bool fromChannelObj(const Channel *c, Context &ctx);
+  };
+
   /** Represents the general config of the radio within the D868UV binary codeplug.
    *
-   * This class only implemements the differences to the generic
+   * This class only implements the differences to the generic
    * @c AnytoneCodeplug::GeneralSettingsElement.
    *
-   * Memmory layout of encoded general settings (size 0x00d0 bytes):
+   * Memory layout of encoded general settings (size 0x00d0 bytes):
    * @verbinclude d868uv_generalsettings.txt
    */
   class GeneralSettingsElement: public AnytoneCodeplug::GeneralSettingsElement
@@ -216,7 +278,7 @@ public:
     virtual Color callDisplayColor() const;
     /** Sets the display color for callsigns. */
     virtual void setCallDisplayColor(Color color);
-    /** Returns the GPS update preriod in seconds. */
+    /** Returns the GPS update period in seconds. */
     virtual unsigned gpsUpdatePeriod() const;
     /** Sets the GPS update period in seconds. */
     virtual void setGPSUpdatePeriod(unsigned sec);
@@ -232,9 +294,9 @@ public:
     virtual void setKeyToneLevel(unsigned level);
     /** Sets the key-tone level adjustable. */
     virtual void setKeyToneLevelAdjustable();
-    /** Returns @c true if the GPS units are imperical. */
+    /** Returns @c true if the GPS units are imperial. */
     virtual bool gpsUnitsImperial() const;
-    /** Enables/disables imperical GPS units. */
+    /** Enables/disables imperial GPS units. */
     virtual void enableGPSUnitsImperial(bool enable);
     /** Returns @c true if the knob is locked. */
     virtual bool knobLock() const;
@@ -277,7 +339,7 @@ public:
     virtual AutoRepDir autoRepeaterDirectionB() const;
     /** Sets the auto-repeater direction for VFO B. */
     virtual void setAutoRepeaterDirectionB(AutoRepDir dir);
-    /** Retuns @c true if the default boot channel is enabled. */
+    /** Returns @c true if the default boot channel is enabled. */
     virtual bool defaultChannel() const;
     /** Enables/disables default boot channel. */
     virtual void enableDefaultChannel(bool enable);
@@ -307,44 +369,31 @@ public:
     virtual void setDefaultChannelBIndex(unsigned idx);
     /** Sets the default channel for VFO B to be VFO. */
     virtual void setDefaultChannelBToVFO();
-    /** Returns @c true if the last caller is kept when changeing channel. */
+    /** Returns @c true if the last caller is kept when changing channel. */
     virtual bool keepLastCaller() const;
-    /** Enables/disables keeping the last caller when changeing the channel. */
+    /** Enables/disables keeping the last caller when changing the channel. */
     virtual void enableKeepLastCaller(bool enable);
 
     virtual bool fromConfig(const Flags &flags, Context &ctx);
     virtual bool updateConfig(Context &ctx);
   };
 
+protected:
+  /** Hidden constructor constructor. */
+  explicit D868UVCodeplug(const QString &label, QObject *parent = nullptr);
+
 public:
   /** Empty constructor. */
   explicit D868UVCodeplug(QObject *parent = nullptr);
 
-  /** Clears and resets the complete codeplug to some default values. */
-  virtual void clear();
-
-  /** Sets all bitmaps for the given config. */
+protected:
+  bool allocateBitmaps();
   virtual void setBitmaps(Config *config);
-
-  /** Allocate all code-plug elements that must be downloaded for decoding. All code-plug elements
-   * within the radio that are not represented within the common Config are omitted. */
-  virtual void allocateForDecoding();
-  /** Allocate all code-plug elements that must be written back to the device to maintain a working
-   * codeplug. These elements might be updated during encoding. */
   virtual void allocateUpdated();
-  /** Allocate all code-plug elements that are defined through the common Config. */
+  virtual void allocateForDecoding();
   virtual void allocateForEncoding();
 
-  /** Decodes the binary codeplug and stores its content in the given generic configuration. */
-  bool decode(Config *config, const ErrorStack &err=ErrorStack());
-
-  /** Encodes the given generic configuration as a binary codeplug. */
-  bool encode(Config *config, const Flags &flags=Flags(), const ErrorStack &err=ErrorStack());
-
-protected:
-  /** Encodes the given config (via context) to the binary codeplug. */
   virtual bool encodeElements(const Flags &flags, Context &ctx, const ErrorStack &err=ErrorStack());
-  /** Decodes the downloaded codeplug. */
   virtual bool decodeElements(Context &ctx, const ErrorStack &err=ErrorStack());
 
   /** Allocate channels from bitmap. */
@@ -442,7 +491,7 @@ protected:
   /** Link GPS systems. */
   virtual bool linkGPSSystems(Context &ctx, const ErrorStack &err=ErrorStack());
 
-  /** Allocate refab SMS messages. */
+  /** Allocate prefab SMS messages. */
   virtual void allocateSMSMessages();
   /** Allocates hot key settings memory section. */
   virtual void allocateHotKeySettings();

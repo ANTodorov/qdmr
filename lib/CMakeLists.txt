@@ -9,12 +9,12 @@ ELSE (APPLE)
 ENDIF(APPLE)
 
 SET(libdmrconf_SOURCES
-    utils.cc crc32.cc signaling.cc codeplugcontext.cc addressmap.cc radiointerface.cc errorstack.cc
+    utils.cc crc32.cc signaling.cc addressmap.cc radiointerface.cc errorstack.cc
     radio.cc ${hid_SOURCES} dfu_libusb.cc usbserial.cc radioinfo.cc usbdevice.cc radiolimits.cc
     csvreader.cc dfufile.cc userdatabase.cc logger.cc
     configobject.cc configreference.cc config.cc radiosettings.cc contact.cc rxgrouplist.cc
-    channel.cc zone.cc scanlist.cc gpssystem.cc codeplug.cc roaming.cc callsigndb.cc
-    talkgroupdatabase.cc radioid.cc encryptionextension.cc commercial_extension.cc
+    channel.cc zone.cc scanlist.cc gpssystem.cc codeplug.cc roamingzone.cc roamingchannel.cc
+    callsigndb.cc talkgroupdatabase.cc radioid.cc encryptionextension.cc commercial_extension.cc
     tyt_radio.cc tyt_interface.cc tyt_codeplug.cc tyt_callsigndb.cc tyt_extensions.cc
     md2017.cc md2017_codeplug.cc md2017_callsigndb.cc md2017_filereader.cc md2017_limits.cc
     md390.cc md390_codeplug.cc md390_filereader.cc md390_limits.cc
@@ -25,19 +25,20 @@ SET(libdmrconf_SOURCES
     gd77.cc gd77_codeplug.cc gd77_callsigndb.cc gd77_filereader.cc gd77_limits.cc
     opengd77.cc opengd77_interface.cc opengd77_codeplug.cc opengd77_extension.cc
     opengd77_callsigndb.cc opengd77_limits.cc
+    openrtx.cc openrtx_interface.cc openrtx_codeplug.cc
     anytone_interface.cc anytone_radio.cc anytone_codeplug.cc anytone_extension.cc anytone_limits.cc
     d868uv.cc d868uv_codeplug.cc d868uv_callsigndb.cc d868uv_limits.cc
     d878uv.cc d878uv_codeplug.cc d878uv_limits.cc
-    d578uv.cc d578uv_codeplug.cc d578uv_limits.cc
     d878uv2.cc d878uv2_codeplug.cc d878uv2_limits.cc d878uv2_callsigndb.cc
-    d578uv2.cc d578uv2_codeplug.cc d578uv2_limits.cc)
-
+    d578uv.cc d578uv_codeplug.cc d578uv_limits.cc
+    d578uv2.cc d578uv2_codeplug.cc d578uv2_limits.cc
+    dmr6x2uv.cc dmr6x2uv_codeplug.cc dmr6x2uv_limits.cc)
 SET(libdmrconf_MOC_HEADERS
     radio.hh ${hid_HEADERS} dfu_libusb.hh usbserial.hh radiolimits.hh
     csvreader.hh dfufile.hh userdatabase.hh logger.hh
     configobject.hh configreference.hh config.hh radiosettings.hh contact.hh rxgrouplist.hh
-    channel.hh zone.hh scanlist.hh gpssystem.hh codeplug.hh roaming.hh callsigndb.hh
-    talkgroupdatabase.hh radioid.hh encryptionextension.hh commercial_extension.hh
+    channel.hh zone.hh scanlist.hh gpssystem.hh codeplug.hh roamingzone.hh roamingchannel.hh
+    callsigndb.hh talkgroupdatabase.hh radioid.hh encryptionextension.hh commercial_extension.hh
     tyt_radio.hh tyt_interface.hh tyt_codeplug.hh tyt_callsigndb.hh tyt_extensions.hh
     md2017.hh md2017_codeplug.hh md2017_callsigndb.hh md2017_limits.hh
     md390.hh md390_codeplug.hh md390_limits.hh
@@ -48,17 +49,20 @@ SET(libdmrconf_MOC_HEADERS
     gd77.hh gd77_codeplug.hh gd77_callsigndb.hh gd77_limits.hh
     opengd77.hh opengd77_interface.hh opengd77_codeplug.hh opengd77_extension.hh
     opengd77_callsigndb.hh opengd77_limits.hh
+    openrtx.hh openrtx_interface.hh openrtx_codeplug.hh
     anytone_interface.hh anytone_radio.hh anytone_codeplug.hh anytone_extension.hh anytone_limits.hh
     d868uv.hh d868uv_codeplug.hh d868uv_callsigndb.hh d868uv_limits.hh
     d878uv.hh d878uv_codeplug.hh d878uv_limits.hh
-    d578uv.hh d578uv_codeplug.hh d578uv_limits.hh
     d878uv2.hh d878uv2_codeplug.hh d878uv2_limits.hh d878uv2_callsigndb.hh
-    d578uv2.hh d578uv2_codeplug.hh d578uv2_limits.hh)
+    d578uv.hh d578uv_codeplug.hh d578uv_limits.hh
+    d578uv2.hh d578uv2_codeplug.hh d578uv2_limits.hh
+    dmr6x2uv.hh dmr6x2uv_codeplug.hh dmr6x2uv_limits.hh)
 
 SET(libdmrconf_HEADERS libdmrconf.hh radiointerface.hh radioinfo.hh usbdevice.hh
     gd77_filereader.hh rd5r_filereader.hh uv390_filereader.hh md2017_filereader.hh
     md390_filereader.hh
-    utils.hh crc32.hh signaling.hh codeplugcontext.hh addressmap.hh errorstack.hh)
+    utils.hh crc32.hh signaling.hh addressmap.hh errorstack.hh)
+
 
 configure_file(config.h.in ${PROJECT_BINARY_DIR}/lib/config.h)
 

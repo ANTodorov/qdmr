@@ -6,7 +6,7 @@
 #include "gpssystem.hh"
 #include "radioid.hh"
 #include "rxgrouplist.hh"
-#include "roaming.hh"
+#include "roamingzone.hh"
 #include "encryptionextension.hh"
 
 
@@ -73,6 +73,17 @@ ConfigObjectReference::copy(const ConfigObjectReference *ref) {
   return set(ref->_object);
 }
 
+int
+ConfigObjectReference::compare(const ConfigObjectReference &other) const {
+  if (isNull() && other.isNull())
+    return 0;
+  if (!isNull() && other.isNull())
+    return 1;
+  if (isNull() && !other.isNull())
+    return -1;
+  return this->_object->compare(*other._object);
+}
+
 bool
 ConfigObjectReference::allow(const QMetaObject *elementType) {
   if (! _elementTypes.contains(elementType->className()))
@@ -113,20 +124,20 @@ ContactReference::ContactReference(QObject *parent)
 
 
 /* ********************************************************************************************* *
- * Implementation of DigitalContactReference
+ * Implementation of DMRContactReference
  * ********************************************************************************************* */
-DigitalContactReference::DigitalContactReference(QObject *parent)
-  : ContactReference(DigitalContact::staticMetaObject, parent)
+DMRContactReference::DMRContactReference(QObject *parent)
+  : ContactReference(DMRContact::staticMetaObject, parent)
 {
   // pass...
 }
 
 
 /* ********************************************************************************************* *
- * Implementation of DigitalContactRefList
+ * Implementation of DMRContactRefList
  * ********************************************************************************************* */
-DigitalContactRefList::DigitalContactRefList(QObject *parent)
-  : ConfigObjectRefList(DigitalContact::staticMetaObject, parent)
+DMRContactRefList::DMRContactRefList(QObject *parent)
+  : ConfigObjectRefList(DMRContact::staticMetaObject, parent)
 {
   // pass...
 }
@@ -149,20 +160,20 @@ ChannelReference::ChannelReference(QObject *parent)
 
 
 /* ********************************************************************************************* *
- * Implementation of DigitalChannelReference
+ * Implementation of DMRChannelReference
  * ********************************************************************************************* */
-DigitalChannelReference::DigitalChannelReference(QObject *parent)
-  : ChannelReference(DigitalChannel::staticMetaObject, parent)
+DMRChannelReference::DMRChannelReference(QObject *parent)
+  : ChannelReference(DMRChannel::staticMetaObject, parent)
 {
   // pass...
 }
 
 
 /* ********************************************************************************************* *
- * Implementation of AnalogChannelReference
+ * Implementation of FMChannelReference
  * ********************************************************************************************* */
-AnalogChannelReference::AnalogChannelReference(QObject *parent)
-  : ChannelReference(AnalogChannel::staticMetaObject, parent)
+FMChannelReference::FMChannelReference(QObject *parent)
+  : ChannelReference(FMChannel::staticMetaObject, parent)
 {
   // pass...
 }
@@ -185,10 +196,20 @@ ChannelRefList::ChannelRefList(QObject *parent)
 
 
 /* ********************************************************************************************* *
- * Implementation of DigitalChannelRefList
+ * Implementation of DMRChannelRefList
  * ********************************************************************************************* */
-DigitalChannelRefList::DigitalChannelRefList(QObject *parent)
-  : ChannelRefList(DigitalChannel::staticMetaObject, parent)
+DMRChannelRefList::DMRChannelRefList(QObject *parent)
+  : ChannelRefList(DMRChannel::staticMetaObject, parent)
+{
+  // pass...
+}
+
+
+/* ********************************************************************************************* *
+ * Implementation of RoamingChannelRefList
+ * ********************************************************************************************* */
+RoamingChannelRefList::RoamingChannelRefList(QObject *parent)
+  : ConfigObjectRefList({RoamingChannel::staticMetaObject}, parent)
 {
   // pass...
 }
@@ -243,7 +264,7 @@ GPSSystemReference::GPSSystemReference(QObject *parent)
 /* ********************************************************************************************* *
  * Implementation of RadioIDReference
  * ********************************************************************************************* */
-RadioIDReference::RadioIDReference(QObject *parent)
+DMRRadioIDReference::DMRRadioIDReference(QObject *parent)
   : ConfigObjectReference(DMRRadioID::staticMetaObject, parent)
 {
   // pass...

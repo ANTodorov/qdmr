@@ -8,7 +8,7 @@
 #define CALLSIGN_INDEX_BANK_OFFSET  0x00040000  // Offset between index banks
 #define CALLSIGN_INDEX_BANK_SIZE    0x0001f400  // Size of each callsign index bank
 
-#define CALLSIGN_BANK0              0x04500000  // Start address of the actuall call sign entries
+#define CALLSIGN_BANK0              0x04500000  // Start address of the actual call sign entries
 #define CALLSIGN_BANK_OFFSET        0x00040000  // Offset between callsign entry bank
 #define CALLSIGN_BANK_SIZE          0x000186a0  // Size of each callsign entry bank
 
@@ -31,11 +31,11 @@ D868UVCallsignDB::EntryElement::EntryElement(uint8_t *ptr)
 }
 
 void
-D868UVCallsignDB::EntryElement::setCallType(DigitalContact::Type type) {
+D868UVCallsignDB::EntryElement::setCallType(DMRContact::Type type) {
   switch (type) {
-  case DigitalContact::PrivateCall: setUInt8(0x0000, 0); break;
-  case DigitalContact::GroupCall: setUInt8(0x0000, 1); break;
-  case DigitalContact::AllCall: setUInt8(0x0000, 2); break;
+  case DMRContact::PrivateCall: setUInt8(0x0000, 0); break;
+  case DMRContact::GroupCall: setUInt8(0x0000, 1); break;
+  case DMRContact::AllCall: setUInt8(0x0000, 2); break;
   }
 }
 
@@ -45,8 +45,13 @@ D868UVCallsignDB::EntryElement::setNumber(unsigned num) {
 }
 
 void
+D868UVCallsignDB::EntryElement::setFriendFlag(bool set) {
+  setBit(0x0005, 3, set);
+}
+
+void
 D868UVCallsignDB::EntryElement::setRingTone(RingTone tone) {
-  setUInt8(0x0005, (unsigned)tone);
+  setUInt2(0x0005, 0, (unsigned)tone);
 }
 
 void
@@ -65,7 +70,7 @@ D868UVCallsignDB::EntryElement::setContent(
 
 unsigned
 D868UVCallsignDB::EntryElement::fromUser(const UserDatabase::User &user) {
-  setCallType(DigitalContact::PrivateCall);
+  setCallType(DMRContact::PrivateCall);
   setNumber(user.id);
   setRingTone(RingTone::Off);
   setContent(user.name, user.city, user.call, user.state, user.country, "");

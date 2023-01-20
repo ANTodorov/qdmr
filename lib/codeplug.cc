@@ -2,6 +2,7 @@
 #include "config.hh"
 #include <QtEndian>
 #include "logger.hh"
+#include "roamingchannel.hh"
 
 
 /* ********************************************************************************************* *
@@ -369,6 +370,47 @@ Codeplug::Element::setUInt32_le(unsigned offset, uint32_t value) {
   (*ptr) = qToLittleEndian(value);
 }
 
+uint64_t
+Codeplug::Element::getUInt64_be(unsigned offset) const {
+  if ((offset+8) > _size) {
+    logFatal() << "Cannot get int64 (be) at " << QString::number(offset, 16) << ": Overflow.";
+    return 0;
+  }
+
+  quint64 *ptr = (quint64 *)(_data+offset);
+  return qFromBigEndian<quint64>(*ptr);
+}
+uint64_t
+Codeplug::Element::getUInt64_le(unsigned offset) const {
+  if ((offset+8) > _size) {
+    logFatal() << "Cannot get int64 (le) at " << QString::number(offset, 16) << ": Overflow.";
+    return 0;
+  }
+
+  quint64 *ptr = (quint64 *)(_data+offset);
+  return qFromLittleEndian<quint64>(*ptr);
+}
+void
+Codeplug::Element::setUInt64_be(unsigned offset, uint64_t value) {
+  if ((offset+8) > _size) {
+    logFatal() << "Cannot set int64 (be) at " << QString::number(offset, 16) << ": Overflow.";
+    return;
+  }
+
+  quint64 *ptr = (quint64 *)(_data+offset);
+  (*ptr) = qToBigEndian<quint64>(value);
+}
+void
+Codeplug::Element::setUInt64_le(unsigned offset, uint64_t value) {
+  if ((offset+8) > _size) {
+    logFatal() << "Cannot set int64 (le) at " << QString::number(offset, 16) << ": Overflow.";
+    return;
+  }
+
+  quint64 *ptr = (quint64 *)(_data+offset);
+  (*ptr) = qToLittleEndian<quint64>(value);
+}
+
 uint8_t
 Codeplug::Element::getBCD2(unsigned offset) const {
   if ((offset+1) > _size) {
@@ -546,7 +588,7 @@ Codeplug::Context::Context(Config *config)
 {
   // Add tables for common elements
   addTable(&DMRRadioID::staticMetaObject);
-  addTable(&DigitalContact::staticMetaObject);
+  addTable(&DMRContact::staticMetaObject);
   addTable(&DTMFContact::staticMetaObject);
   addTable(&RXGroupList::staticMetaObject);
   addTable(&Channel::staticMetaObject);
@@ -554,6 +596,7 @@ Codeplug::Context::Context(Config *config)
   addTable(&ScanList::staticMetaObject);
   addTable(&GPSSystem::staticMetaObject);
   addTable(&APRSSystem::staticMetaObject);
+  addTable(&RoamingChannel::staticMetaObject);
   addTable(&RoamingZone::staticMetaObject);
 }
 

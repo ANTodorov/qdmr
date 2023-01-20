@@ -100,10 +100,21 @@ protected:
   explicit ConfigItem(QObject *parent = nullptr);
 
 public:
-  /** Copies the given item into this. */
+  /** Copies the given item into this one.
+   * @returns @c true if copying was successful and false otherwise. The two items must be of the
+   *          same type (obviously). */
   virtual bool copy(const ConfigItem &other);
+
   /** Clones this item. */
   virtual ConfigItem *clone() const = 0;
+
+  /** Compares the items.
+   *
+   * This method returns 0 if the two items are equivalent and -1, 1 otherwise. The established
+   * order is somewhat arbitrary.
+   *
+   * @returns 0 if the two items are equivalent, -1 or 1 otherwise.*/
+  virtual int compare(const ConfigItem &other) const;
 
 public:
   /** Recursively labels the config object.
@@ -149,21 +160,21 @@ public:
     return qobject_cast<Object *>(this);
   }
 
-  /** Retruns @c true if there is a class info "description" for this instance. */
+  /** Returns @c true if there is a class info "description" for this instance. */
   bool hasDescription() const;
-  /** Retruns @c true if there is a class info "longDescription" for this instance. */
+  /** Returns @c true if there is a class info "longDescription" for this instance. */
   bool hasLongDescription() const;
-  /** Retruns @c true if there is a class info "[PropertyName]Description" for the given property. */
+  /** Returns @c true if there is a class info "[PropertyName]Description" for the given property. */
   bool hasDescription(const QMetaProperty &prop) const;
-  /** Retruns @c true if there is a class info "[PropertyName]LongDescription" for the given property. */
+  /** Returns @c true if there is a class info "[PropertyName]LongDescription" for the given property. */
   bool hasLongDescription(const QMetaProperty &prop) const;
-  /** Retunrs the description of this instance if set by a class info. */
+  /** Returns the description of this instance if set by a class info. */
   QString description() const;
-  /** Retunrs the long description of this instance if set by a class info. */
+  /** Returns the long description of this instance if set by a class info. */
   QString longDescription() const;
-  /** Retunrs the description of property if set by a class info. */
+  /** Returns the description of property if set by a class info. */
   QString description(const QMetaProperty &prop) const;
-  /** Retunrs the long description of property if set by a class info. */
+  /** Returns the long description of property if set by a class info. */
   QString longDescription(const QMetaProperty &prop) const;
 
 protected:
@@ -182,7 +193,7 @@ signals:
 };
 
 
-/** Base class of all labled and named objects.
+/** Base class of all labeled and named objects.
  * @ingroup config */
 class ConfigObject: public ConfigItem
 {
@@ -262,7 +273,7 @@ public:
 
   /** Returns the number of elements in the list. */
   virtual int count() const;
-  /** Retunrs the index of the given object within the list. */
+  /** Returns the index of the given object within the list. */
   virtual int indexOf(ConfigObject *obj) const;
   /** Clears the list. */
   virtual void clear();
@@ -292,7 +303,7 @@ public:
 
   /** Returns the element type for this list. */
   const QList<QMetaObject> &elementTypes() const;
-  /** Retunrs a list of all class names. */
+  /** Returns a list of all class names. */
   QStringList classNames() const;
 
 signals:
@@ -304,9 +315,9 @@ signals:
   void elementRemoved(int idx);
 
 private slots:
-  /** Internal used callback to handle modified elments. */
+  /** Internal used callback to handle modified elements. */
   void onElementModified(ConfigItem *obj);
-  /** Internal used callback to handle deleted elments. */
+  /** Internal used callback to handle deleted elements. */
   void onElementDeleted(QObject *obj);
 
 protected:
@@ -338,6 +349,14 @@ public:
   void clear();
   bool copy(const AbstractConfigObjectList &other);
 
+  /** Compares the object lists.
+   *
+   * This method returns 0 if the two lists are equivalent and -1, 1 otherwise. The established
+   * order is somewhat arbitrary.
+   *
+   * @returns 0 if the two lists are equivalent, -1 or 1 otherwise.*/
+  virtual int compare(const ConfigObjectList &other) const;
+
   /** Allocates a member objects for the given YAML node. */
   virtual ConfigItem *allocateChild(const YAML::Node &node, ConfigItem::Context &ctx, const ErrorStack &err=ErrorStack()) = 0;
   /** Parses the list from the YAML node. */
@@ -367,6 +386,14 @@ protected:
 public:
   bool label(ConfigItem::Context &context, const ErrorStack &err=ErrorStack());
   YAML::Node serialize(const ConfigItem::Context &context, const ErrorStack &err=ErrorStack());
+
+  /** Compares the object ref lists.
+   *
+   * This method returns 0 if the two lists are equivalent and -1, 1 otherwise. The established
+   * order is somewhat arbitrary.
+   *
+   * @returns 0 if the two lists are equivalent, -1 or 1 otherwise.*/
+  virtual int compare(const ConfigObjectRefList &other) const;
 };
 
 

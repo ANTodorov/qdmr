@@ -76,7 +76,7 @@ public:
 protected:
   /** Holds the severity of the issue. */
   Severity _severity;
-  /** Holds the item-stack (where the issue occured). */
+  /** Holds the item-stack (where the issue occurred). */
   QStringList _stack;
   /** Holds the text message. */
   QString _message;
@@ -96,7 +96,7 @@ public:
   /** Constructs a new message and puts it into the list of issues. */
   RadioLimitIssue &newMessage(RadioLimitIssue::Severity severity = RadioLimitIssue::Hint);
 
-  /** Retunrs the number of issues. */
+  /** Returns the number of issues. */
   int count() const;
   /** Returns the n-th issue. */
   const RadioLimitIssue &message(int n) const;
@@ -304,6 +304,20 @@ protected:
 };
 
 
+/** Represents a DMR ID.
+ *  That is an uint between 1 and 16777215 without any default value.
+ * @ingroup limits */
+class RadioLimitDMRId: public RadioLimitUInt
+{
+  Q_OBJECT
+
+public:
+  /** Constructor.
+   * @param parent Specifies the QObject parent. */
+  explicit RadioLimitDMRId(QObject *parent=nullptr);
+};
+
+
 /** Represents a limit for a set of enum values.
  * @ingroup limits */
 class RadioLimitEnum: public RadioLimitValue
@@ -348,20 +362,39 @@ public:
   /** Empty constructor. */
   explicit RadioLimitFrequencies(QObject *parent=nullptr);
   /** Constructor from initializer list. */
-  RadioLimitFrequencies(const RangeList &ranges, QObject *parent=nullptr);
+  RadioLimitFrequencies(const RangeList &ranges, bool warnOnly=false, QObject *parent=nullptr);
 
   bool verify(const ConfigItem *item, const QMetaProperty &prop, RadioLimitContext &context) const;
 
 protected:
   /** Holds the frequency ranges for the device. */
   QList<FrequencyRange> _frequencyRanges;
+  /** If @c true, throw only a warning. */
+  bool _warnOnly;
+};
+
+
+/** Specialization for transmit frequency limits.
+ * The verification is only performed if the channel is not "RX Only".
+ * @ingroup limits. */
+class RadioLimitTransmitFrequencies: public RadioLimitFrequencies
+{
+  Q_OBJECT
+
+public:
+  /** Empty constructor. */
+  explicit RadioLimitTransmitFrequencies(QObject *parent=nullptr);
+  /** Constructor from initializer list. */
+  RadioLimitTransmitFrequencies(const RangeList &ranges, QObject *parent=nullptr);
+
+  bool verify(const ConfigItem *item, const QMetaProperty &prop, RadioLimitContext &context) const;
 };
 
 
 /** Represents the limits for a @c ConfigItem instance.
  *
  * That is, it holds the limits for every property of the @c ConfigItem instance. This class
- * provides a initializer list constructor for easy programmatic contruction of limits.
+ * provides a initializer list constructor for easy programmatic construction of limits.
  *
  * @ingroup limits */
 class RadioLimitItem: public RadioLimitElement
@@ -381,7 +414,7 @@ public:
    * with the same name, @c false is returned.
    *
    * @param prop Specifies the name of the property.
-   * @param structure Specifies the structure declaration of the propery value.
+   * @param structure Specifies the structure declaration of the property value.
    * @returns @c false If a property with the same name is already defined. */
   bool add(const QString &prop, RadioLimitElement *structure);
 
@@ -600,10 +633,32 @@ protected:
   qint64 _minSize;
   /** Holds the maximum size of the list. */
   qint64 _maxSize;
-  /** Holds the limits for all objects of the list. */
-  RadioLimitObject *_element;
   /** Possible classes of instances, the references may point to. */
   QSet<QString> _types;
+};
+
+
+/** Implements the limits for a list of references to group call contacts.
+ * This is used to restrict the elements of group lists to group calls.
+ * @ingroup limits */
+class RadioLimitGroupCallRefList: public RadioLimitElement
+{
+  Q_OBJECT
+
+public:
+  /** Constructor
+   * @param minSize Specifies the minimum size of the list. If -1, no check is performed.
+   * @param maxSize Specifies the maximum size of the list. If -1, no check is performed.
+   * @param parent  Specifies the QObject parent. */
+  RadioLimitGroupCallRefList(int minSize, int maxSize, QObject *parent=nullptr);
+
+  bool verify(const ConfigItem *item, const QMetaProperty &prop, RadioLimitContext &context) const;
+
+protected:
+  /** Holds the minimum size of the list. */
+  qint64 _minSize;
+  /** Holds the maximum size of the list. */
+  qint64 _maxSize;
 };
 
 
@@ -646,11 +701,11 @@ public:
   /** Verifies the given configuration. */
   virtual bool verifyConfig(const Config *config, RadioLimitContext &context) const;
 
-  /** Returns @c true if the radio supportes a call-sign DB. */
+  /** Returns @c true if the radio supports a call-sign DB. */
   bool hasCallSignDB() const;
   /** Returns @c true if the call-sign DB is implemented. */
   bool callSignDBImplemented() const;
-  /** Retunrs the maximum number of entries in the call-sign DB. */
+  /** Returns the maximum number of entries in the call-sign DB. */
   unsigned numCallSignDBEntries() const;
 
 protected:

@@ -181,8 +181,8 @@ OpenGD77Codeplug::ChannelElement::toChannelObj(Context &ctx) const {
   if (nullptr == ch)
     return nullptr;
 
-  if (ch->is<AnalogChannel>()) {
-    AnalogChannel *ac = ch->as<AnalogChannel>();
+  if (ch->is<FMChannel>()) {
+    FMChannel *ac = ch->as<FMChannel>();
     if (squelchIsDefault())
       ac->setSquelchDefault();
     else
@@ -206,8 +206,8 @@ OpenGD77Codeplug::ChannelElement::linkChannelObj(Channel *c, Context &ctx) const
   if (! GD77Codeplug::ChannelElement::linkChannelObj(c, ctx))
     return false;
 
-  if (c->is<DigitalChannel>()) {
-    DigitalChannel *dc = c->as<DigitalChannel>();
+  if (c->is<DMRChannel>()) {
+    DMRChannel *dc = c->as<DMRChannel>();
     // Link radio ID
     if (hasRadioId()) {
       DMRRadioID *id = ctx.config()->radioIDs()->find(radioId());
@@ -230,14 +230,14 @@ OpenGD77Codeplug::ChannelElement::fromChannelObj(const Channel *c, Context &ctx)
   if (! GD77Codeplug::ChannelElement::fromChannelObj(c, ctx))
     return false;
 
-  if (c->is<AnalogChannel>()) {
-    const AnalogChannel *ac = c->as<AnalogChannel>();
+  if (c->is<FMChannel>()) {
+    const FMChannel *ac = c->as<FMChannel>();
     if (ac->defaultSquelch())
       setSquelchDefault();
     else
       setSquelch(ac->squelch());
-  } else if (c->is<DigitalChannel>()) {
-    const DigitalChannel *dc = c->as<DigitalChannel>();
+  } else if (c->is<DMRChannel>()) {
+    const DMRChannel *dc = c->as<DMRChannel>();
     // Encode radio ID
     if (DefaultRadioID::get() == dc->radioIdObj()) {
       clearRadioId();
@@ -407,38 +407,38 @@ OpenGD77Codeplug::ContactElement::markValid(bool valid) {
 
 bool
 OpenGD77Codeplug::ContactElement::overridesTimeSlot() const {
-  return TimeSlotOverride::None != (TimeSlotOverride)getUInt8(0x0017);
+  return TimeSlotOverride::None != (TimeSlotOverride)getUInt8(Offset::TimeSlotOverride);
 }
-DigitalChannel::TimeSlot
+DMRChannel::TimeSlot
 OpenGD77Codeplug::ContactElement::timeSlot() const {
-  switch ((TimeSlotOverride)getUInt8(0x0017)) {
-  case TimeSlotOverride::TS1: return DigitalChannel::TimeSlot::TS1;
-  case TimeSlotOverride::TS2: return DigitalChannel::TimeSlot::TS2;
+  switch ((TimeSlotOverride)getUInt8(Offset::TimeSlotOverride)) {
+  case TimeSlotOverride::TS1: return DMRChannel::TimeSlot::TS1;
+  case TimeSlotOverride::TS2: return DMRChannel::TimeSlot::TS2;
   default: break;
   }
-  return DigitalChannel::TimeSlot::TS1;
+  return DMRChannel::TimeSlot::TS1;
 }
 void
-OpenGD77Codeplug::ContactElement::setTimeSlot(DigitalChannel::TimeSlot ts) {
-  if (DigitalChannel::TimeSlot::TS1 == ts)
-    setUInt8(0x0017, (unsigned)TimeSlotOverride::TS1);
+OpenGD77Codeplug::ContactElement::setTimeSlot(DMRChannel::TimeSlot ts) {
+  if (DMRChannel::TimeSlot::TS1 == ts)
+    setUInt8(Offset::TimeSlotOverride, (unsigned)TimeSlotOverride::TS1);
   else
-    setUInt8(0x0017, (unsigned)TimeSlotOverride::TS2);
+    setUInt8(Offset::TimeSlotOverride, (unsigned)TimeSlotOverride::TS2);
 }
 void
 OpenGD77Codeplug::ContactElement::disableTimeSlotOverride() {
-  setUInt8(0x0017, (unsigned)TimeSlotOverride::None);
+  setUInt8(Offset::TimeSlotOverride, (unsigned)TimeSlotOverride::None);
 }
 
-DigitalContact *
+DMRContact *
 OpenGD77Codeplug::ContactElement::toContactObj(Context &ctx) const {
-  DigitalContact *c = GD77Codeplug::ContactElement::toContactObj(ctx);
+  DMRContact *c = GD77Codeplug::ContactElement::toContactObj(ctx);
   if (nullptr == c)
     return nullptr;
 
   OpenGD77ContactExtension *ext = new OpenGD77ContactExtension(c);
   if (overridesTimeSlot()) {
-    if (DigitalChannel::TimeSlot::TS1 == timeSlot())
+    if (DMRChannel::TimeSlot::TS1 == timeSlot())
       ext->setTimeSlotOverride(OpenGD77ContactExtension::TimeSlotOverride::TS1);
     else
       ext->setTimeSlotOverride(OpenGD77ContactExtension::TimeSlotOverride::TS2);
@@ -451,23 +451,50 @@ OpenGD77Codeplug::ContactElement::toContactObj(Context &ctx) const {
 }
 
 void
-OpenGD77Codeplug::ContactElement::fromContactObj(const DigitalContact *c, Context &ctx) {
+OpenGD77Codeplug::ContactElement::fromContactObj(const DMRContact *c, Context &ctx) {
   GD77Codeplug::ContactElement::fromContactObj(c, ctx);
-  if (c->openGD77ContactExtension())
-    return;
 
   if(const OpenGD77ContactExtension *ext = c->openGD77ContactExtension()) {
     if (OpenGD77ContactExtension::TimeSlotOverride::None != ext->timeSlotOverride()) {
       if (OpenGD77ContactExtension::TimeSlotOverride::TS1 == ext->timeSlotOverride())
-        setTimeSlot(DigitalChannel::TimeSlot::TS1);
+        setTimeSlot(DMRChannel::TimeSlot::TS1);
       else
-        setTimeSlot(DigitalChannel::TimeSlot::TS2);
+        setTimeSlot(DMRChannel::TimeSlot::TS2);
     } else {
       disableTimeSlotOverride();
     }
   }
 }
 
+
+/* ******************************************************************************************** *
+ * Implementation of OpenGD77Codeplug::GroupListElement
+ * ******************************************************************************************** */
+OpenGD77Codeplug::GroupListElement::GroupListElement(uint8_t *ptr, unsigned size)
+  : GD77Codeplug::GroupListElement(ptr, size)
+{
+  // pass...
+}
+
+OpenGD77Codeplug::GroupListElement::GroupListElement(uint8_t *ptr)
+  : GD77Codeplug::GroupListElement(ptr)
+{
+  // pass...
+}
+
+void
+OpenGD77Codeplug::GroupListElement::fromRXGroupListObj(const RXGroupList *lst, Context &ctx) {
+  setName(lst->name());
+  // Iterate over all 32 entries in the codeplug
+  for (int i=0; i<32; i++) {
+    if (lst->count() > i) {
+      setMember(i, ctx.index(lst->contact(i)));
+    } else {
+      // Clear entry.
+      clearMember(i);
+    }
+  }
+}
 
 /* ******************************************************************************************** *
  * Implementation of OpenGD77Codeplug
@@ -569,7 +596,7 @@ OpenGD77Codeplug::createContacts(Config *config, Context &ctx, const ErrorStack 
     ContactElement el(data(ADDR_CONTACTS + i*CONTACT_SIZE, IMAGE_CONTACTS));
     if (! el.isValid())
       continue;
-    DigitalContact *cont = el.toContactObj(ctx);
+    DMRContact *cont = el.toContactObj(ctx);
     ctx.add(cont, i+1); config->contacts()->add(cont);
   }
   return true;
@@ -851,11 +878,11 @@ OpenGD77Codeplug::encodeGroupLists(Config *config, const Flags &flags, Context &
 
   GroupListBankElement bank(data(ADDR_GROUP_LIST_BANK, IMAGE_GROUP_LIST_BANK)); bank.clear();
   for (int i=0; i<NUM_GROUP_LISTS; i++) {
-    if (i >= config->rxGroupLists()->count())
-      continue;
     GroupListElement el(bank.get(i));
-    el.fromRXGroupListObj(config->rxGroupLists()->list(i), ctx);
-    bank.setContactCount(i, config->rxGroupLists()->list(i)->count());
+    if (i < config->rxGroupLists()->count()) {
+      el.fromRXGroupListObj(config->rxGroupLists()->list(i), ctx);
+      bank.setContactCount(i, config->rxGroupLists()->list(i)->count());
+    }
   }
   return true;
 }

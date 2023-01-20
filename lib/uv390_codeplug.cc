@@ -1,5 +1,4 @@
 #include "uv390_codeplug.hh"
-#include "codeplugcontext.hh"
 #include "logger.hh"
 #include "tyt_extensions.hh"
 #include <QTimeZone>
@@ -163,17 +162,21 @@ UV390Codeplug::ChannelElement::enableDCDMLeader(bool enable) {
 
 
 Channel *
-UV390Codeplug::ChannelElement::toChannelObj() const {
-  if (! isValid())
+UV390Codeplug::ChannelElement::toChannelObj(const ErrorStack &err) const {
+  if (! isValid()) {
+    errMsg(err) << "Cannot decode invalid channel.";
     return nullptr;
+  }
 
-  Channel *ch = TyTCodeplug::ChannelElement::toChannelObj();
-  if (nullptr == ch)
+  Channel *ch = TyTCodeplug::ChannelElement::toChannelObj(err);
+  if (nullptr == ch) {
+    errMsg(err) << "Cannot decode base TyT channel element.";
     return nullptr;
+  }
 
   // decode squelch setting
-  if (ch->is<AnalogChannel>()) {
-    AnalogChannel *ach = ch->as<AnalogChannel>();
+  if (ch->is<FMChannel>()) {
+    FMChannel *ach = ch->as<FMChannel>();
     ach->setSquelch(squelch());
   }
   // Common settings
@@ -201,8 +204,8 @@ UV390Codeplug::ChannelElement::fromChannelObj(const Channel *chan, Context &ctx)
     setPower(chan->power());
   setSquelch(0);
 
-  if (chan->is<AnalogChannel>()) {
-    const AnalogChannel *achan = chan->as<const AnalogChannel>();
+  if (chan->is<FMChannel>()) {
+    const FMChannel *achan = chan->as<const FMChannel>();
     if (achan->defaultSquelch())
       setSquelch(ctx.config()->settings()->squelch());
     else
@@ -662,11 +665,11 @@ UV390Codeplug::createChannels(Config *config, Context &ctx, const ErrorStack &er
   for (int i=0; i<NUM_CHANNELS; i++) {
     ChannelElement chan(data(ADDR_CHANNELS+i*CHANNEL_SIZE));
     if (! chan.isValid())
-      break;
+      continue;
     if (Channel *obj = chan.toChannelObj()) {
       config->channelList()->add(obj); ctx.add(obj, i+1);
     } else {
-      errMsg(err) << "Invlaid channel at index  " << i << ".";
+      errMsg(err) << "Invalid channel at index  " << i << ".";
       return false;
     }
   }
@@ -678,7 +681,7 @@ UV390Codeplug::linkChannels(Context &ctx, const ErrorStack &err) {
   for (int i=0; i<NUM_CHANNELS; i++) {
     ChannelElement chan(data(ADDR_CHANNELS+i*CHANNEL_SIZE));
     if (! chan.isValid())
-      break;
+      continue;
     if (! chan.linkChannelObj(ctx.get<Channel>(i+1), ctx)) {
       errMsg(err) << "Cannot link channel at index " << i << ".";
       return false;
@@ -713,11 +716,11 @@ UV390Codeplug::createContacts(Config *config, Context &ctx, const ErrorStack &er
   for (int i=0; i<NUM_CONTACTS; i++) {
     ContactElement cont(data(ADDR_CONTACTS+i*CONTACT_SIZE));
     if (! cont.isValid())
-      break;
-    if (DigitalContact *obj = cont.toContactObj()) {
+      continue;
+    if (DMRContact *obj = cont.toContactObj()) {
       config->contacts()->add(obj); ctx.add(obj, i+1);
     } else {
-      errMsg(err) << "Invlaid contact at index " << i << ".";
+      errMsg(err) << "Invalid contact at index " << i << ".";
       return false;
     }
   }
@@ -755,11 +758,11 @@ UV390Codeplug::createZones(Config *config, Context &ctx, const ErrorStack &err) 
   for (int i=0; i<NUM_ZONES; i++) {
     ZoneElement zone(data(ADDR_ZONES+i*ZONE_SIZE));
     if (! zone.isValid())
-      break;
+      continue;
     if (Zone *obj = zone.toZoneObj()) {
       config->zones()->add(obj); ctx.add(obj, i+1);
     } else {
-      errMsg(err) << "Invlaid zone at index " << i << ".";
+      errMsg(err) << "Invalid zone at index " << i << ".";
       return false;
     }
   }
@@ -772,7 +775,7 @@ UV390Codeplug::linkZones(Context &ctx, const ErrorStack &err) {
   for (int i=0; i<NUM_ZONES; i++) {
     ZoneElement zone(data(ADDR_ZONES+i*ZONE_SIZE));
     if (! zone.isValid())
-      break;
+      continue;
     if (! zone.linkZone(ctx.get<Zone>(i+1), ctx)) {
       errMsg(err) << "Cannot link zone at index " << i << ".";
       return false;
@@ -812,11 +815,11 @@ UV390Codeplug::createGroupLists(Config *config, Context &ctx, const ErrorStack &
   for (int i=0; i<NUM_GROUPLISTS; i++) {
     GroupListElement glist(data(ADDR_GROUPLISTS+i*GROUPLIST_SIZE));
     if (! glist.isValid())
-      break;
+      continue;
     if (RXGroupList *obj = glist.toGroupListObj(ctx)) {
       config->rxGroupLists()->add(obj); ctx.add(obj, i+1);
     } else {
-      errMsg(err) << "Invlaid RX group list at index " << i << ".";
+      errMsg(err) << "Invalid RX group list at index " << i << ".";
       return false;
     }
   }
@@ -828,7 +831,7 @@ UV390Codeplug::linkGroupLists(Context &ctx, const ErrorStack &err) {
   for (int i=0; i<NUM_GROUPLISTS; i++) {
     GroupListElement glist(data(ADDR_GROUPLISTS+i*GROUPLIST_SIZE));
     if (! glist.isValid())
-      break;
+      continue;
     if (! glist.linkGroupListObj(ctx.get<RXGroupList>(i+1), ctx)) {
       errMsg(err) << "Cannot link group-list at index " << i << ".";
       return false;
@@ -863,11 +866,11 @@ UV390Codeplug::createScanLists(Config *config, Context &ctx, const ErrorStack &e
   for (int i=0; i<NUM_SCANLISTS; i++) {
     ScanListElement scan(data(ADDR_SCANLISTS + i*SCANLIST_SIZE));
     if (! scan.isValid())
-      break;
+      continue;
     if (ScanList *obj = scan.toScanListObj(ctx)) {
       config->scanlists()->add(obj); ctx.add(obj, i+1);
     } else {
-      errMsg(err) << "Invlaid scan list at index " << i << ".";
+      errMsg(err) << "Invalid scan list at index " << i << ".";
       return false;
     }
   }
@@ -879,8 +882,7 @@ UV390Codeplug::linkScanLists(Context &ctx, const ErrorStack &err) {
   for (int i=0; i<NUM_SCANLISTS; i++) {
     ScanListElement scan(data(ADDR_SCANLISTS + i*SCANLIST_SIZE));
     if (! scan.isValid())
-      break;
-
+      continue;
     if (! scan.linkScanListObj(ctx.get<ScanList>(i+1), ctx)) {
       errMsg(err) << "Cannot link scan list at index " << i << ".";
       return false;
@@ -918,11 +920,11 @@ UV390Codeplug::createPositioningSystems(Config *config, Context &ctx, const Erro
   for (int i=0; i<NUM_GPSSYSTEMS; i++) {
     GPSSystemElement gps(data(ADDR_GPSSYSTEMS+i*GPSSYSTEM_SIZE));
     if (! gps.isValid())
-      break;
+      continue;
     if (GPSSystem *obj = gps.toGPSSystemObj()) {
       config->posSystems()->add(obj); ctx.add(obj, i+1);
     } else {
-      errMsg(err) << "Invlaid GPS system at index " << i << ".";
+      errMsg(err) << "Invalid GPS system at index " << i << ".";
       return false;
     }
   }
@@ -935,7 +937,7 @@ UV390Codeplug::linkPositioningSystems(Context &ctx, const ErrorStack &err) {
   for (int i=0; i<NUM_GPSSYSTEMS; i++) {
     GPSSystemElement gps(data(ADDR_GPSSYSTEMS+i*GPSSYSTEM_SIZE));
     if (! gps.isValid())
-      break;
+      continue;
     if (! gps.linkGPSSystemObj(ctx.get<GPSSystem>(i+1), ctx)) {
       errMsg(err) << "Cannot link GPS system at index " << i << ".";
       return false;

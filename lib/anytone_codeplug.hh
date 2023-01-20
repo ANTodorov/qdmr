@@ -18,7 +18,7 @@ class AnytoneCodeplug : public Codeplug
 public:
   /** Represents the base class for channel encodings in all AnyTone codeplugs.
    *
-   * Memmory layout of encoded channel (0x40 bytes):
+   * Memory layout of encoded channel (0x40 bytes):
    * @verbinclude anytone_channel.txt
    */
   class ChannelElement: public Element
@@ -115,11 +115,11 @@ public:
     virtual void setPower(Channel::Power power);
 
     /** Returns the band width of the channel. */
-    virtual AnalogChannel::Bandwidth bandwidth() const;
+    virtual FMChannel::Bandwidth bandwidth() const;
     /** Sets the band width of the channel. */
-    virtual void setBandwidth(AnalogChannel::Bandwidth bw);
+    virtual void setBandwidth(FMChannel::Bandwidth bw);
 
-    /** Retuns the transmit offset direction. */
+    /** Returns the transmit offset direction. */
     virtual RepeaterMode repeaterMode() const;
     /** Sets the transmit offset direction. */
     virtual void setRepeaterMode(RepeaterMode mode);
@@ -160,14 +160,23 @@ public:
     /** Enables/disables talkaround. */
     virtual void enableTalkaround(bool enable);
 
+    /** Returns @c true if the TX CTCSS tone frequency is custom (non standard). */
+    virtual bool txCTCSSIsCustom() const;
     /** Returns the TX CTCSS tone. */
     virtual Signaling::Code txCTCSS() const;
     /** Sets the TX CTCSS tone. */
     virtual void setTXCTCSS(Signaling::Code tone);
+    /** Enables TX custom CTCSS frequency. */
+    virtual void enableTXCustomCTCSS();
+    /** Returns @c true if the RX CTCSS tone frequency is custom (non standard). */
+    virtual bool rxCTCSSIsCustom() const;
     /** Returns the RX CTCSS tone. */
     virtual Signaling::Code rxCTCSS() const;
     /** Sets the RX CTCSS tone. */
     virtual void setRXCTCSS(Signaling::Code tone);
+    /** Enables RX custom CTCSS frequency. */
+    virtual void enableRXCustomCTCSS();
+
     /** Returns the TX DCS code. */
     virtual Signaling::Code txDCS() const;
     /** Sets the TX DCS code. */
@@ -187,20 +196,20 @@ public:
     /** Sets the 2-tone decode index (0-based). */
     virtual void setTwoToneDecodeIndex(unsigned idx);
 
-    /** Retunrs the transmit contact index (0-based). */
+    /** Returns the transmit contact index (0-based). */
     virtual unsigned contactIndex() const;
     /** Sets the transmit contact index (0-based). */
     virtual void setContactIndex(unsigned idx);
 
-    /** Retunrs the radio ID index (0-based). */
+    /** Returns the radio ID index (0-based). */
     virtual unsigned radioIDIndex() const;
     /** Sets the radio ID index (0-based). */
     virtual void setRadioIDIndex(unsigned idx);
 
     /** Returns @c true if the sequelch is silent and @c false if open. */
-    virtual AnytoneAnalogChannelExtension::SquelchMode squelchMode() const;
+    virtual AnytoneFMChannelExtension::SquelchMode squelchMode() const;
     /** Enables/disables silent squelch. */
-    virtual void setSquelchMode(AnytoneAnalogChannelExtension::SquelchMode mode);
+    virtual void setSquelchMode(AnytoneFMChannelExtension::SquelchMode mode);
 
     /** Returns the admit criterion. */
     virtual Admit admit() const;
@@ -249,9 +258,9 @@ public:
     virtual void setColorCode(unsigned code);
 
     /** Returns the time slot. */
-    virtual DigitalChannel::TimeSlot timeSlot() const;
+    virtual DMRChannel::TimeSlot timeSlot() const;
     /** Sets the time slot. */
-    virtual void setTimeSlot(DigitalChannel::TimeSlot ts);
+    virtual void setTimeSlot(DMRChannel::TimeSlot ts);
 
     /** Returns @c true if SMS confirmation is enabled. */
     virtual bool smsConfirm() const;
@@ -292,45 +301,6 @@ public:
     /** Sets the channel name. */
     virtual void setName(const QString &name);
 
-    /** Returns @c true if ranging is enabled. */
-    virtual bool ranging() const;
-    /** Enables/disables ranging. */
-    virtual void enableRanging(bool enable);
-    /** Returns @c true if through mode is enabled. */
-    virtual bool throughMode() const;
-    /** Enables/disables though mode. */
-    virtual void enableThroughMode(bool enable);
-    /** Returns @c true if data ACK is enabled. */
-    virtual bool dataACK() const;
-    /** Enables/disables data ACK. */
-    virtual void enableDataACK(bool enable);
-
-    /** Returns @c true if TX APRS is enabled. */
-    virtual bool txDigitalAPRS() const;
-    /** Enables/disables TX APRS. */
-    virtual void enableTXDigitalAPRS(bool enable);
-    /** Returns the DMR APRS system index. */
-    virtual unsigned digitalAPRSSystemIndex() const;
-    /** Sets the DMR APRS system index. */
-    virtual void setDigitalAPRSSystemIndex(unsigned idx);
-
-    /** Returns the DMR encryption key index (+1), 0=Off. */
-    virtual unsigned dmrEncryptionKeyIndex() const;
-    /** Sets the DMR encryption key index (+1), 0=Off. */
-    virtual void setDMREncryptionKeyIndex(unsigned idx);
-    /** Returns @c true if multiple key encryption is enabled. */
-    virtual bool multipleKeyEncryption() const;
-    /** Enables/disables multiple key encryption. */
-    virtual void enableMultipleKeyEncryption(bool enable);
-    /** Returns @c true if random key is enabled. */
-    virtual bool randomKey() const;
-    /** Enables/disables random key. */
-    virtual void enableRandomKey(bool enable);
-    /** Returns @c true if SMS is enabled. */
-    virtual bool sms() const;
-    /** Enables/disables SMS. */
-    virtual void enableSMS(bool enable);
-
     /** Constructs a generic @c Channel object from the codeplug channel. */
     virtual Channel *toChannelObj(Context &ctx) const;
     /** Links a previously constructed channel to the rest of the configuration. */
@@ -341,7 +311,7 @@ public:
 
   /** Represents the base class for conacts in all AnyTone codeplugs.
    *
-   * Memmory layout of encoded contact (0x64 bytes):
+   * Memory layout of encoded contact (0x64 bytes):
    * @verbinclude anytone_contact.txt
    */
   class ContactElement: public Element
@@ -362,9 +332,9 @@ public:
     bool isValid() const;
 
     /** Returns the contact type. */
-    virtual DigitalContact::Type type() const;
+    virtual DMRContact::Type type() const;
     /** Sets the contact type. */
-    virtual void setType(DigitalContact::Type type);
+    virtual void setType(DMRContact::Type type);
 
     /** Returns the name of the contact. */
     virtual QString name() const;
@@ -382,9 +352,9 @@ public:
     virtual void setAlertType(AnytoneContactExtension::AlertType type);
 
     /** Assembles a @c DigitalContact from this contact. */
-    virtual DigitalContact *toContactObj(Context &ctx) const;
+    virtual DMRContact *toContactObj(Context &ctx) const;
     /** Constructs this contact from the give @c DigitalContact. */
-    virtual bool fromContactObj(const DigitalContact *contact, Context &ctx);
+    virtual bool fromContactObj(const DMRContact *contact, Context &ctx);
   };
 
   /** Represents the base class for analog (DTMF) contacts in all AnyTone codeplugs.
@@ -393,6 +363,13 @@ public:
    * @verbinclude anytone_dtmfcontact.txt */
   class DTMFContactElement: public Element
   {
+    enum Offsets {
+      DIGITS = 0x0,
+      DIGIT_COUNT = 0x7,
+      NAME = DIGIT_COUNT + 1
+    };
+    static const unsigned NAME_LEN = 15;
+
   protected:
     /** Hidden constructor. */
     DTMFContactElement(uint8_t *ptr, unsigned size);
@@ -468,7 +445,7 @@ public:
 
   /** Represents the base class for scan lists in all AnyTone codeplugs.
    *
-   * Memmory layout of encoded scanlist (0x90 bytes):
+   * Memory layout of encoded scanlist (0x90 bytes):
    * @verbinclude anytone_scanlist.txt */
   class ScanListElement: public Element
   {
@@ -557,7 +534,7 @@ public:
     /** Sets the revert channel type. */
     virtual void setRevertChannel(RevertChannel type);
 
-    /** Retunrs the name of the scan list. */
+    /** Returns the name of the scan list. */
     virtual QString name() const;
     /** Sets the name of the scan list. */
     virtual void setName(const QString &name);
@@ -582,7 +559,7 @@ public:
 
   /** Represents the base class for radio IDs in all AnyTone codeplugs.
    *
-   * Memmory layout of encoded scanlist (0x20 bytes):
+   * Memory layout of encoded scanlist (0x20 bytes):
    * @verbinclude anytone_radioid.txt */
   class RadioIDElement: public Element
   {
@@ -615,7 +592,7 @@ public:
 
   /** Represents the base class for the settings element in all AnyTone codeplugs.
    *
-   * Memmory layout of encoded general settings (0xd0 bytes):
+   * Memory layout of encoded general settings (0xd0 bytes):
    * @verbinclude anytone_generalsettings.txt
    */
   class GeneralSettingsElement: public Element
@@ -687,7 +664,7 @@ public:
       /** Empty constructor. */
       Melody();
       /** Copy constructor. */
-      Melody(const Melody &ohter);
+      Melody(const Melody &other);
       /** Assignment operator. */
       Melody &operator =(const Melody &other);
     };
@@ -752,7 +729,7 @@ public:
     virtual unsigned voxDelay() const;
     /** Sets the VOX delay in ms. */
     virtual void setVOXDelay(unsigned ms);
-    /** Retuns the VFO scan type. */
+    /** Returns the VFO scan type. */
     virtual VFOScanType vfoScanType() const;
     /** Sets the VFO scan type. */
     virtual void setVFOScanType(VFOScanType type);
@@ -761,23 +738,23 @@ public:
     /** Sets the microphone gain. */
     virtual void setMICGain(unsigned gain);
 
-    /** Retruns the key function for a short press on the programmable function key 1. */
+    /** Returns the key function for a short press on the programmable function key 1. */
     virtual KeyFunction progFuncKey1Short() const;
     /** Sets the key function for a short press on the programmable function key 1. */
     virtual void setProgFuncKey1Short(KeyFunction func);
-    /** Retruns the key function for a short press on the programmable function key 2. */
+    /** Returns the key function for a short press on the programmable function key 2. */
     virtual KeyFunction progFuncKey2Short() const;
     /** Sets the key function for a short press on the programmable function key 2. */
     virtual void setProgFuncKey2Short(KeyFunction func);
-    /** Retruns the key function for a short press on the programmable function key 3. */
+    /** Returns the key function for a short press on the programmable function key 3. */
     virtual KeyFunction progFuncKey3Short() const;
     /** Sets the key function for a short press on the programmable function key 3. */
     virtual void setProgFuncKey3Short(KeyFunction func);
-    /** Retruns the key function for a short press on the function key 1. */
+    /** Returns the key function for a short press on the function key 1. */
     virtual KeyFunction funcKey1Short() const;
     /** Sets the key function for a short press on the function key 1. */
     virtual void setFuncKey1Short(KeyFunction func);
-    /** Retruns the key function for a short press on the function key 2. */
+    /** Returns the key function for a short press on the function key 2. */
     virtual KeyFunction funcKey2Short() const;
     /** Sets the key function for a short press on the function key 2. */
     virtual void setFuncKey2Short(KeyFunction func);
@@ -802,13 +779,13 @@ public:
     virtual bool recording() const;
     /** Enables/disables recording. */
     virtual void enableRecording(bool enable);
-    /** Retruns the display brightness. */
+    /** Returns the display brightness. */
     virtual unsigned brightness() const;
     /** Sets the display brightness. */
     virtual void setBrightness(unsigned level);
     /** Returns @c true if the backlight is always on. */
     virtual bool backlightPermanent() const;
-    /** Retunrs the backlight duration in seconds. */
+    /** Returns the backlight duration in seconds. */
     virtual unsigned backlightDuration() const;
     /** Sets the backlight duration in seconds. */
     virtual void setBacklightDuration(unsigned sec);
@@ -839,15 +816,15 @@ public:
     virtual QTimeZone gpsTimeZone() const;
     /** Sets the GPS time zone. */
     virtual void setGPSTimeZone(const QTimeZone &zone);
-    /** Retruns @c true if the talk permit tone is enabled for digital channels. */
+    /** Returns @c true if the talk permit tone is enabled for digital channels. */
     virtual bool talkPermitDigital() const;
-    /** Retruns @c true if the talk permit tone is enabled for digital channels. */
+    /** Returns @c true if the talk permit tone is enabled for digital channels. */
     virtual bool talkPermitAnalog() const;
     /** Enables/disables the talk permit tone for digital channels. */
     virtual void enableTalkPermitDigital(bool enable);
     /** Enables/disables the talk permit tone for analog channels. */
     virtual void enableTalkPermitAnalog(bool enable);
-    /** Retruns @c true if the reset tone is enabled for digital calls. */
+    /** Returns @c true if the reset tone is enabled for digital calls. */
     virtual bool digitalResetTone() const;
     /** Enables/disables the reset tone for digital calls. */
     virtual void enableDigitalResetTone(bool enable);
@@ -880,23 +857,23 @@ public:
     /** Enables/disables get GPS position. */
     virtual void enableGetGPSPosition(bool enable);
 
-    /** Retruns the key function for a long press on the programmable function key 1. */
+    /** Returns the key function for a long press on the programmable function key 1. */
     virtual KeyFunction progFuncKey1Long() const;
     /** Sets the key function for a long press on the programmable function key 1. */
     virtual void setProgFuncKey1Long(KeyFunction func);
-    /** Retruns the key function for a long press on the programmable function key 2. */
+    /** Returns the key function for a long press on the programmable function key 2. */
     virtual KeyFunction progFuncKey2Long() const;
     /** Sets the key function for a long press on the programmable function key 2. */
     virtual void setProgFuncKey2Long(KeyFunction func);
-    /** Retruns the key function for a long press on the programmable function key 3. */
+    /** Returns the key function for a long press on the programmable function key 3. */
     virtual KeyFunction progFuncKey3Long() const;
     /** Sets the key function for a long press on the programmable function key 3. */
     virtual void setProgFuncKey3Long(KeyFunction func);
-    /** Retruns the key function for a long press on the function key 1. */
+    /** Returns the key function for a long press on the function key 1. */
     virtual KeyFunction funcKey1Long() const;
     /** Sets the key function for a long press on the function key 1. */
     virtual void setFuncKey1Long(KeyFunction func);
-    /** Retruns the key function for a long press on the function key 2. */
+    /** Returns the key function for a long press on the function key 2. */
     virtual KeyFunction funcKey2Long() const;
     /** Sets the key function for a long press on the function key 2. */
     virtual void setFuncKey2Long(KeyFunction func);
@@ -908,7 +885,7 @@ public:
     virtual bool volumeChangePrompt() const;
     /** Enables/disables the volume change prompt. */
     virtual void enableVolumeChangePrompt(bool enable);
-    /** Retruns the auto repeater offset direction for VFO A. */
+    /** Returns the auto repeater offset direction for VFO A. */
     virtual AutoRepDir autoRepeaterDirectionA() const;
     /** Sets the auto-repeater offset direction for VFO A. */
     virtual void setAutoRepeaterDirectionA(AutoRepDir dir);
@@ -921,7 +898,7 @@ public:
     virtual bool displayClock() const;
     /** Enables/disables clock display. */
     virtual void enableDisplayClock(bool enable);
-    /** Retuns the maximum headphone volume. */
+    /** Returns the maximum headphone volume. */
     virtual unsigned maxHeadphoneVolume() const;
     /** Sets the maximum headphone volume. */
     virtual void setMaxHeadPhoneVolume(unsigned max);
@@ -929,20 +906,20 @@ public:
     virtual bool enhanceAudio() const;
     /** Enables/disables "enhanced" audio. */
     virtual void enableEnhancedAudio(bool enable);
-    /** Retruns the minimum VFO scan frequency for the UHF band in Hz. */
+    /** Returns the minimum VFO scan frequency for the UHF band in Hz. */
     virtual unsigned minVFOScanFrequencyUHF() const;
     /** Sets the minimum VFO scan frequency for the UHF band in Hz. */
     virtual void setMinVFOScanFrequencyUHF(unsigned hz);
-    /** Retruns the maximum VFO scan frequency for the UHF band in Hz. */
+    /** Returns the maximum VFO scan frequency for the UHF band in Hz. */
     virtual unsigned maxVFOScanFrequencyUHF() const;
     /** Sets the maximum VFO scan frequency for the UHF band in Hz. */
     virtual void setMaxVFOScanFrequencyUHF(unsigned hz);
 
-    /** Retruns the minimum VFO scan frequency for the VHF band in Hz. */
+    /** Returns the minimum VFO scan frequency for the VHF band in Hz. */
     virtual unsigned minVFOScanFrequencyVHF() const;
     /** Sets the minimum VFO scan frequency for the VHF band in Hz. */
     virtual void setMinVFOScanFrequencyVHF(unsigned hz);
-    /** Retruns the maximum VFO scan frequency for the VHF band in Hz. */
+    /** Returns the maximum VFO scan frequency for the VHF band in Hz. */
     virtual unsigned maxVFOScanFrequencyVHF() const;
     /** Sets the maximum VFO scan frequency for the VHF band in Hz. */
     virtual void setMaxVFOScanFrequencyVHF(unsigned hz);
@@ -963,15 +940,15 @@ public:
     /** Clears the auto-repeater offset frequency index for VHF. */
     virtual void clearAutoRepeaterOffsetFrequencyIndexVHF();
 
-    /** Retuns the call-tone melody. */
+    /** Returns the call-tone melody. */
     virtual Melody callToneMelody() const;
     /** Sets the call-tone melody. */
     virtual void setCallToneMelody(const Melody &melody);
-    /** Retuns the idle-tone melody. */
+    /** Returns the idle-tone melody. */
     virtual Melody idleToneMelody() const;
     /** Sets the idle-tone melody. */
     virtual void setIdleToneMelody(const Melody &melody);
-    /** Retuns the reset-tone melody. */
+    /** Returns the reset-tone melody. */
     virtual Melody resetToneMelody() const;
     /** Sets the reset-tone melody. */
     virtual void setResetToneMelody(const Melody &melody);
@@ -990,7 +967,7 @@ public:
     virtual bool updateConfig(Context &ctx);
   };
 
-  /** Represets the base class for zone channel list for all AnyTone codeplugs.
+  /** Represents the base class for zone channel list for all AnyTone codeplugs.
    * Zone channel lists assign a default channel to each zone for VFO A and B.
    *
    * Memory layout of ecoded zone channel lists (size 0x400 bytes):
@@ -1088,7 +1065,7 @@ public:
 
     /** Returns @c true if the automatic APRS is enabled. */
     virtual bool automatic() const;
-    /** Retunrs the automatic transmit interval in seconds. */
+    /** Returns the automatic transmit interval in seconds. */
     virtual unsigned automaticInterval() const;
     /** Sets the automatic transmit interval in seconds. */
     virtual void setAutomaticInterval(unsigned sec);
@@ -1097,7 +1074,7 @@ public:
 
     /** Returns @c true if the fixed location beacon is enabled. */
     virtual bool fixedLocation() const;
-    /** Retunrs the location of the fixed position. */
+    /** Returns the location of the fixed position. */
     virtual QGeoCoordinate location() const;
     /** Sets the location of the fixed position. */
     virtual void setLocation(const QGeoCoordinate &pos);
@@ -1111,11 +1088,11 @@ public:
 
     /** Returns @c true if the n-th channel is set. */
     virtual bool hasChannel(unsigned n) const;
-    /** Returns @c true if the n-th channle is VFO A. */
+    /** Returns @c true if the n-th channel is VFO A. */
     virtual bool channelIsVFOA(unsigned n) const;
-    /** Returns @c true if the n-th channle is VFO B. */
+    /** Returns @c true if the n-th channel is VFO B. */
     virtual bool channelIsVFOB(unsigned n) const;
-    /** Returns @c true if the n-th channle is selected channel. */
+    /** Returns @c true if the n-th channel is selected channel. */
     virtual bool channelIsSelected(unsigned n) const;
     /** Returns the index of the n-th channel. */
     virtual unsigned channelIndex(unsigned n) const;
@@ -1130,22 +1107,22 @@ public:
     /** Resets the n-th channel. */
     virtual void clearChannel(unsigned n);
 
-    /** Retuns the destination DMR ID to send the APRS information to. */
+    /** Returns the destination DMR ID to send the APRS information to. */
     virtual unsigned destination() const;
     /** Sets the destination DMR ID to send the APRS information to. */
     virtual void setDestination(unsigned id);
 
     /** Returns the call type. */
-    virtual DigitalContact::Type callType() const;
+    virtual DMRContact::Type callType() const;
     /** Sets the call type. */
-    virtual void setCallType(DigitalContact::Type type);
+    virtual void setCallType(DMRContact::Type type);
 
     /** Returns @c true if the timeslot of the channel is overridden. */
     virtual bool timeSlotOverride() const;
     /** Returns the timeslot (only valid if @c timeSlotOverride returns @c true). */
-    virtual DigitalChannel::TimeSlot timeslot() const;
+    virtual DMRChannel::TimeSlot timeslot() const;
     /** Sets the timeslot. */
-    virtual void overrideTimeSlot(DigitalChannel::TimeSlot ts);
+    virtual void overrideTimeSlot(DMRChannel::TimeSlot ts);
     /** Disables TS override. */
     virtual void disableTimeSlotOverride();
 
@@ -1249,9 +1226,9 @@ public:
     /** Sets the type of the quick call. */
     virtual void setType(Type type);
 
-    /** Retunrs @c true if an analog contact index is set. */
+    /** Returns @c true if an analog contact index is set. */
     virtual bool hasContactIndex() const;
-    /** Retunrs the analog contact index. */
+    /** Returns the analog contact index. */
     virtual unsigned contactIndex() const;
     /** Sets the analog contact index. */
     virtual void setContactIndex(unsigned idx);
@@ -1329,14 +1306,14 @@ public:
      * @c Type::Call. */
     virtual void setCallType(CallType type);
 
-    /** If @c type returns @c Type::Call and @c callType @c CalLType::Digital, retuns the digital
+    /** If @c type returns @c Type::Call and @c callType @c CalLType::Digital, returns the digital
      * call type. */
     virtual DigiCallType digiCallType() const;
     /** Sets the digital call type. For this setting to have an effect, the @c type must be
      * @c Type::Call and @c callType must be @c CallType::Digital. */
     virtual void setDigiCallType(DigiCallType type);
 
-    /** Retruns @c true if the contact index is set. */
+    /** Returns @c true if the contact index is set. */
     virtual bool hasContactIndex() const;
     /** If @c type is @c Type::Call, returns the contact index. This is either an index of an
      * analog quick call if @c callType is CallType::Analog or a contact index if @c callType is
@@ -1562,9 +1539,9 @@ public:
     void clear();
 
     /** Returns the call type. */
-    virtual DigitalContact::Type callType() const;
+    virtual DMRContact::Type callType() const;
     /** Sets the call type. */
-    virtual void setCallType(DigitalContact::Type type);
+    virtual void setCallType(DMRContact::Type type);
 
     /** Returns the destination DMR number. */
     virtual unsigned destination() const;
@@ -1596,12 +1573,12 @@ public:
     /** Clears the ID. */
     void clear();
 
-    /** Retunrs the 5Tone encoding standard. */
+    /** Returns the 5Tone encoding standard. */
     virtual Standard standard() const;
     /** Sets the encoding standard. */
     virtual void setStandard(Standard std);
 
-    /** Retunrs the tone duration in ms. */
+    /** Returns the tone duration in ms. */
     virtual unsigned toneDuration() const;
     /** Sets the tone duration in ms. */
     virtual void setToneDuration(unsigned ms);
@@ -2047,33 +2024,52 @@ public:
     virtual void setIndex(unsigned idx);
 
   public:
-    /** Retuns the size of this entry. */
+    /** Returns the size of this entry. */
     static unsigned size();
   };
 
 protected:
   /** Hidden constructor. */
-  explicit AnytoneCodeplug(QObject *parent=nullptr);
+  AnytoneCodeplug(const QString &label, QObject *parent=nullptr);
 
 public:
   /** Destructor. */
   virtual ~AnytoneCodeplug();
 
   /** Clears and resets the complete codeplug to some default values. */
-  virtual void clear() = 0;
+  virtual void clear();
 
+  bool encode(Config *config, const Flags &flags, const ErrorStack &err);
+  bool decode(Config *config, const ErrorStack &err);
+
+protected:
   virtual bool index(Config *config, Context &ctx, const ErrorStack &err=ErrorStack()) const;
 
+  /** Allocates the bitmaps. This is also performed during a clear. */
+  virtual bool allocateBitmaps() = 0;
   /** Sets all bitmaps for the given config. */
   virtual void setBitmaps(Config *config) = 0;
-  /** Allocate all code-plug elements that must be downloaded for decoding. All code-plug elements
-   * within the radio that are not represented within the common Config are omitted. */
-  virtual void allocateForDecoding() = 0;
+
   /** Allocate all code-plug elements that must be written back to the device to maintain a working
    * codeplug. These elements might be updated during encoding. */
   virtual void allocateUpdated() = 0;
+  /** Allocate all code-plug elements that must be downloaded for decoding. All code-plug elements
+   * within the radio that are not represented within the common Config are omitted. */
+  virtual void allocateForDecoding() = 0;
   /** Allocate all code-plug elements that are defined through the common Config. */
   virtual void allocateForEncoding() = 0;
+
+  /** Encodes the given config (via context) to the binary codeplug. */
+  virtual bool encodeElements(const Flags &flags, Context &ctx, const ErrorStack &err=ErrorStack()) = 0;
+  /** Decodes the downloaded codeplug. */
+  virtual bool decodeElements(Context &ctx, const ErrorStack &err=ErrorStack()) = 0;
+
+protected:
+  /** Holds the image label. */
+  QString _label;
+
+  // Allow access to protected allocation methods.
+  friend class AnytoneRadio;
 };
 
 #endif // ANYTONECODEPLUG_HH

@@ -9,7 +9,7 @@
 </info>
 
 <para>
-  The APRS system list specifies the various informations for transmitting your position using analog 
+  The APRS system list specifies the various information for transmitting your position using analog 
   APRS. As digital channels may use either DMR or analog APRS for position reporting, this list shares 
   a namespace with the GPS system list. That is, the ID must be unique across both lists.
 </para>
@@ -32,7 +32,7 @@
   respect to the <link xlink:href="https://en.wikipedia.org/wiki/Levenshtein_distance">Levenshtein 
   distance</link> between the given and all icon names. That is, <emphasis>jogger</emphasis> and 
   <emphasis>jogging</emphasis> will select the same icon. Finally, the 9th column specifies a freely 
-  selectable text to be send with the position report.
+  selectable text to be sent with the position report.
 </para>
 
 </section>

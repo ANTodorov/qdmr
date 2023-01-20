@@ -17,19 +17,20 @@ class RadioInfo
 public:
   /** Known radios. */
   enum Radio {
-    // Open soruce firmware
+    // Open source firmware
     OpenGD77,
+    OpenRTX,
     // Radioddity devices
     RD5R,
     GD77,
     // TyT devices
-    MD390, RT8 = MD390,
+    MD390, MD380 = MD390, RT8 = MD390,
     UV390, UV380 = UV390, RT3S = UV390,
     MD2017, RT82 = MD2017,
     // Anytone devices
     D868UVE,
     D868UV = D868UVE, // Actually a different device. Implement!
-    DMR6X2 = D868UVE, // Actually a D868UV, implement!
+    DMR6X2UV,
     D878UV,
     D878UVII,
     D578UV,
@@ -51,16 +52,16 @@ public:
   /** Empty constructor. */
   RadioInfo();
 
-  /** Retunrs @c true if the info is valid. */
+  /** Returns @c true if the info is valid. */
   bool isValid() const;
 
   /** Returns the radio key (used to identify radios in the command line). */
   const QString &key() const;
   /** Returns the radio name. */
   const QString &name() const;
-  /** Retunrs the manufacturer name. */
-  const QString &manufactuer() const;
-  /** Returns some information about the iterface to the radio. */
+  /** Returns the manufacturer name. */
+  const QString &manufacturer() const;
+  /** Returns some information about the interface to the radio. */
   const USBDeviceInfo &interface() const;
 
   /** Returns @c true if the radio has aliases.
@@ -69,7 +70,7 @@ public:
   /** Returns the list of alias radios. */
   const QList<RadioInfo> &alias() const;
 
-  /** Retuns the unique device ID (alias radios share ID). */
+  /** Returns the unique device ID (alias radios share ID). */
   Radio id() const;
 
 public:

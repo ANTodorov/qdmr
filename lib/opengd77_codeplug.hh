@@ -29,7 +29,7 @@
  *  <tr><td>0x02dd0</td> <td>0x02f88</td> <td>0x01b8</td> <td>??? Unknown ???</td></tr>
  *  <tr><td>0x02f88</td> <td>0x03388</td> <td>0x0400</td> <td>DTMF contacts, see RadioddityCodeplug::DTMFContactElement.</td></tr>
  *  <tr><td>0x03388</td> <td>0x03780</td> <td>0x03f8</td> <td>??? Unknown ???</td></tr>
- *  <tr><td>0x03780</td> <td>0x05390</td> <td>0x1c10</td> <td>First 128 chanels (bank 0), see @c RadioddityCodeplug::ChannelBankElement, @c OpenGD77Codeplug::ChannelElement.</td></tr>
+ *  <tr><td>0x03780</td> <td>0x05390</td> <td>0x1c10</td> <td>First 128 channels (bank 0), see @c RadioddityCodeplug::ChannelBankElement, @c OpenGD77Codeplug::ChannelElement.</td></tr>
  *  <tr><td>0x05390</td> <td>0x06000</td> <td>0x0c70</td> <td>??? Unknown ???</td></tr>
  *  <tr><th colspan="4">Second EEPROM segment 0x07500-0x13000</th></tr>
  *  <tr><td>0x07500</td> <td>0x07518</td> <td>0x0018</td> <td>??? Unknown ???</td></tr>
@@ -47,7 +47,7 @@
  *  <tr><td>0x00000</td> <td>0x011a0</td> <td>0x11a0</td> <td>??? Unknown ???</td></tr>
  *  <tr><th colspan="4">Second Flash segment 0x7b000-0x8ee60</th></tr>
  *  <tr><td>0x7b000</td> <td>0x7b1b0</td> <td>0x01b0</td> <td>??? Unknown ???</td></tr>
- *  <tr><td>0x7b1b0</td> <td>0x87620</td> <td>0xc470</td> <td>Remaining 896 chanels (bank 1-7), see @c RadioddityCodeplug::ChannelBankElement and @c OpenGD77Codeplug::ChannelElement.</td></tr>
+ *  <tr><td>0x7b1b0</td> <td>0x87620</td> <td>0xc470</td> <td>Remaining 896 channels (bank 1-7), see @c RadioddityCodeplug::ChannelBankElement and @c OpenGD77Codeplug::ChannelElement.</td></tr>
  *  <tr><td>0x87620</td> <td>0x8d620</td> <td>0x6000</td> <td>1024 contacts, see @c OpenGD77Codeplug::ContactElement.</td></tr>
  *  <tr><td>0x8d620</td> <td>0x8e2a0</td> <td>0x0c80</td> <td>76 RX group lists, see @c GD77Codeplug::GroupListBankElement, @c GD77Codeplug::GroupListElement.</td></tr>
  *  <tr><td>0x8e2a0</td> <td>0x8ee60</td> <td>0x0bc0</td> <td>??? Unknown ???</td></tr>
@@ -149,6 +149,7 @@ public:
     /** Constructor. */
     explicit ZoneElement(uint8_t *ptr);
 
+    /** Clears the zone. */
     void clear();
     bool linkZoneObj(Zone *zone, Context &ctx, bool putInB) const;
     void fromZoneObjA(const Zone *zone, Context &ctx);
@@ -179,6 +180,13 @@ public:
     /** Reuse enum from extension. */
     typedef OpenGD77ContactExtension::TimeSlotOverride TimeSlotOverride;
 
+    /** Holds some offsets within the element. */
+    struct Offset {
+      enum {
+        TimeSlotOverride = 0x0017
+      };
+    };
+
   public:
     /** Constructor. */
     explicit ContactElement(uint8_t *ptr);
@@ -193,16 +201,33 @@ public:
     virtual bool overridesTimeSlot() const;
     /** Returns the time slot associated with the contact.
      * Only valid if @c overridesTimeSlot returns @c true. */
-    virtual DigitalChannel::TimeSlot timeSlot() const;
+    virtual DMRChannel::TimeSlot timeSlot() const;
     /** Associates the given time slot with this contact.
      * This will cause the use this time slot whenever this contact is chosen as the TX contact.
      * Irrespective of the selected time slot of the channel. */
-    virtual void setTimeSlot(DigitalChannel::TimeSlot ts);
+    virtual void setTimeSlot(DMRChannel::TimeSlot ts);
     /** Disables time slot override feature. */
     virtual void disableTimeSlotOverride();
 
-    DigitalContact *toContactObj(Context &ctx) const;
-    void fromContactObj(const DigitalContact *c, Context &ctx);
+    DMRContact *toContactObj(Context &ctx) const;
+    void fromContactObj(const DMRContact *c, Context &ctx);
+  };
+
+  /** Implements the OpenGD77 specific group list.
+   *
+   * This class is identical to the GD77 one, but allows for private calls to be added to
+   * the group list. */
+  class GroupListElement: public GD77Codeplug::GroupListElement
+  {
+  protected:
+    /** Hidden constructor. */
+    GroupListElement(uint8_t *ptr, unsigned size);
+
+  public:
+    /** Constructor. */
+    GroupListElement(uint8_t *ptr);
+
+    void fromRXGroupListObj(const RXGroupList *lst, Context &ctx);
   };
 
 public:

@@ -3,7 +3,7 @@
 
 #define HID_INTERFACE   0                   // interface index
 #define TIMEOUT_MSEC    500                 // receive timeout
-#define MAX_RETRY       100                 // Number of retries
+#define MAX_RETRY       20                  // Number of retries
 
 /* ********************************************************************************************* *
  * Implementation of HIDevice::Descriptor
@@ -84,7 +84,7 @@ HIDevice::HIDevice(const USBDeviceDescriptor &descr, const ErrorStack &err, QObj
   if (libusb_kernel_driver_active(_dev, 0)) {
     error = libusb_detach_kernel_driver(_dev, 0);
     if (error < 0) {
-      logWarn() << "Failed to detatch kernel from HID interface (" << error
+      logWarn() << "Failed to detach kernel from HID interface (" << error
                 << "): " << libusb_strerror((enum libusb_error) error) <<
                    ". Device claim will likely fail.";
     }
@@ -292,12 +292,12 @@ HIDevice::read_callback(struct libusb_transfer *t)
   case LIBUSB_TRANSFER_CANCELLED:
     self->_nbytes_received = LIBUSB_ERROR_INTERRUPTED;
     errMsg(self->_cbError) << libusb_error_name(LIBUSB_ERROR_INTERRUPTED);
-    return;
+    break;
 
   case LIBUSB_TRANSFER_NO_DEVICE:
     self->_nbytes_received = LIBUSB_ERROR_NO_DEVICE;
     errMsg(self->_cbError) << libusb_error_name(LIBUSB_ERROR_NO_DEVICE);
-    return;
+    break;
 
   case LIBUSB_TRANSFER_TIMED_OUT:
     self->_nbytes_received = LIBUSB_ERROR_TIMEOUT;
@@ -307,5 +307,6 @@ HIDevice::read_callback(struct libusb_transfer *t)
   default:
     self->_nbytes_received = LIBUSB_ERROR_IO;
     errMsg(self->_cbError) << libusb_error_name(LIBUSB_ERROR_IO);
+    break;
   }
 }
