@@ -5,7 +5,6 @@
 
 #include "d578uv_codeplug.hh"
 #include "signaling.hh"
-#include "codeplugcontext.hh"
 
 class Channel;
 class DigitalContact;

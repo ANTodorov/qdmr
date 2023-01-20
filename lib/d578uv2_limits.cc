@@ -6,7 +6,8 @@
 #include "zone.hh"
 #include "scanlist.hh"
 #include "gpssystem.hh"
-#include "roaming.hh"
+#include "roamingchannel.hh"
+#include "roamingzone.hh"
 
 
 D578UV2Limits::D578UV2Limits(const std::initializer_list<std::pair<double, double> > &freqRanges,
@@ -47,9 +48,9 @@ D578UV2Limits::D578UV2Limits(const std::initializer_list<std::pair<double, doubl
             { "name", new RadioLimitString(1, 16, RadioLimitString::ASCII) },
             { "ring", new RadioLimitBool() },
             { "type", new RadioLimitEnum{
-                (unsigned)DigitalContact::PrivateCall,
-                    (unsigned)DigitalContact::GroupCall,
-                    (unsigned)DigitalContact::AllCall
+                (unsigned)DMRContact::PrivateCall,
+                    (unsigned)DMRContact::GroupCall,
+                    (unsigned)DMRContact::AllCall
               }},
             { "number", new RadioLimitUInt(0, 16777215) }
           } },
@@ -80,14 +81,14 @@ D578UV2Limits::D578UV2Limits(const std::initializer_list<std::pair<double, doubl
               {"vox", new RadioLimitUInt(0, 10, std::numeric_limits<unsigned>::max())},
               {"rxOnly", new RadioLimitBool()},
               {"admit", new RadioLimitEnum{
-                 (unsigned)AnalogChannel::Admit::Always,
-                 (unsigned)AnalogChannel::Admit::Free,
-                 (unsigned)AnalogChannel::Admit::Tone
+                 (unsigned)FMChannel::Admit::Always,
+                 (unsigned)FMChannel::Admit::Free,
+                 (unsigned)FMChannel::Admit::Tone
                } },
               {"squelch", new RadioLimitUInt(0, 10, std::numeric_limits<unsigned>::max())},
               {"bandwidth", new RadioLimitEnum{
-                 (unsigned)AnalogChannel::Bandwidth::Narrow,
-                 (unsigned)AnalogChannel::Bandwidth::Wide
+                 (unsigned)FMChannel::Bandwidth::Narrow,
+                 (unsigned)FMChannel::Bandwidth::Wide
                }},
               {"aprs", new RadioLimitObjRef(APRSSystem::staticMetaObject)},
               {"openGD77", new RadioLimitIgnored(RadioLimitIssue::Hint)},
@@ -104,13 +105,13 @@ D578UV2Limits::D578UV2Limits(const std::initializer_list<std::pair<double, doubl
               {"vox", new RadioLimitUInt(0, 10, std::numeric_limits<unsigned>::max())},
               {"rxOnly", new RadioLimitBool()},
               {"admit", new RadioLimitEnum {
-                 unsigned(DigitalChannel::Admit::Always),
-                 unsigned(DigitalChannel::Admit::Free),
-                 unsigned(DigitalChannel::Admit::ColorCode) } },
+                 unsigned(DMRChannel::Admit::Always),
+                 unsigned(DMRChannel::Admit::Free),
+                 unsigned(DMRChannel::Admit::ColorCode) } },
               {"colorCode", new RadioLimitUInt(0,16)},
               {"timeSlot", new RadioLimitEnum {
-                 unsigned(DigitalChannel::TimeSlot::TS1),
-                 unsigned(DigitalChannel::TimeSlot::TS2) } },
+                 unsigned(DMRChannel::TimeSlot::TS1),
+                 unsigned(DMRChannel::TimeSlot::TS2) } },
               {"radioID", new RadioLimitObjRef(RadioID::staticMetaObject, true)},
               {"groupList", new RadioLimitObjRef(RXGroupList::staticMetaObject, false)},
               {"contact", new RadioLimitObjRef(DigitalContact::staticMetaObject, false)},
